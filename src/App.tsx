@@ -520,24 +520,25 @@ const AdminLogs = () => {
 };
 
 const GuestCheckIn = ({ onLogin, onNavigate }: { onLogin: () => void, onNavigate: (v: GuestSubView) => void }) => (
-  <div className="flex-1 flex flex-col items-center justify-center p-8 relative overflow-hidden bg-surface">
+  <div className="flex-1 flex flex-col items-center justify-start pt-24 p-8 relative overflow-hidden bg-surface">
     <div className="absolute top-[-10%] right-[-10%] w-[120%] h-[120%] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-low/50 via-surface/10 to-surface pointer-events-none -z-10" />
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm space-y-8">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm space-y-12">
       <header className="flex flex-col items-center gap-6 text-center">
         <div className="flex items-center gap-3 text-on-surface">
-          <Shield className="w-8 h-8 text-secondary" />
-          <h1 className="font-headline font-black text-3xl tracking-tight uppercase">SafeStay</h1>
+          <Shield className="w-10 h-10 text-secondary" />
+          <h1 className="font-headline font-black text-3xl tracking-tight uppercase italic">SafeStay</h1>
         </div>
-        <div className="space-y-2">
-          <h2 className="font-headline text-4xl font-extrabold tracking-tight">Welcome back.</h2>
-          <p className="font-body text-sm text-on-surface-variant max-w-[280px] leading-relaxed mx-auto">
-            Access your secure guide and real-time safety dashboard.
+        <div className="space-y-3">
+          <h2 className="font-headline text-5xl font-extrabold tracking-tighter italic leading-none text-slate-900">Welcome<br/>back.</h2>
+          <p className="font-body text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 max-w-[240px] leading-relaxed mx-auto">
+            Authorized Personnel Hub
           </p>
         </div>
       </header>
       
-      <div className="bg-white/40 backdrop-blur-xl p-8 rounded-[2.50rem] shadow-2xl border border-white/20 space-y-6">
-        <div className="space-y-4">
+      <div className="bg-white border border-slate-100 p-10 rounded-[3rem] shadow-2xl shadow-slate-200/50 space-y-8 relative">
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-secondary/5 rounded-full blur-3xl" />
+        <div className="space-y-6">
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4">Room Number</label>
             <input 
@@ -557,7 +558,7 @@ const GuestCheckIn = ({ onLogin, onNavigate }: { onLogin: () => void, onNavigate
         </div>
         <button 
           onClick={onLogin}
-          className="w-full py-5 bg-on-surface text-surface rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl hover:bg-slate-800 active:scale-95 transition-all"
+          className="w-full py-6 bg-slate-950 text-white rounded-[2rem] font-headline font-black text-lg uppercase tracking-widest shadow-2xl hover:bg-slate-800 active:scale-95 transition-all italic tracking-tighter"
         >
           Check In
         </button>
@@ -686,7 +687,7 @@ const GuestDashboard = ({ setSubView, activeCrisis }: { setSubView: (sv: GuestSu
 );
 };
 
-const AdminDashboard = ({ rooms }: { rooms: RoomStatus[] }) => {
+const AdminDashboard = ({ rooms, isCompact = false }: { rooms: RoomStatus[], isCompact?: boolean }) => {
   const [logs, setLogs] = useState<OperationalLog[]>([]);
   const [crises, setCrises] = useState<CrisisEvent[]>([]);
   
@@ -699,134 +700,130 @@ const AdminDashboard = ({ rooms }: { rooms: RoomStatus[] }) => {
   const activeAlerts = crises.filter(c => c.status === 'active').length;
 
   return (
-  <div className="space-y-10">
+  <div className={cn("flex flex-col gap-8", isCompact ? "space-y-0 gap-6" : "space-y-0")}>
     {/* Page Header */}
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div className="flex flex-col">
         <div className="flex items-center gap-2 mb-1">
           <span className="px-2 py-0.5 bg-slate-900 text-white text-[10px] font-bold uppercase rounded">Operational</span>
-          <span className="text-on-surface-variant text-[11px] font-medium">100% Core Services Active</span>
+          {!isCompact && <span className="text-on-surface-variant text-[11px] font-medium">100% Core Services Active</span>}
         </div>
-        <h2 className="text-5xl font-headline font-extrabold tracking-tight text-on-surface">Real-Time Operations</h2>
+        <h2 className={cn("font-headline font-black tracking-tight text-on-surface uppercase italic leading-none", isCompact ? "text-3xl" : "text-5xl")}>Real-Time Operations</h2>
       </div>
       <div className="flex items-center gap-3">
         {crises.length === 0 && (
-          <button onClick={() => seedDatabase()} className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-emerald-600 transition-colors">
-            Seed Demo Data
+          <button onClick={() => seedDatabase()} className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-600 transition-colors">
+            Seed Data
           </button>
         )}
-        <div className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-lg text-sm font-label font-medium text-slate-700 shadow-sm">
+        <div className="hidden sm:flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-lg text-[10px] font-label font-medium text-slate-700 shadow-sm">
           <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
         </div>
-        <button className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-colors">
-          <Plus className="w-4 h-4" />
-          New Task
-        </button>
+        {!isCompact && (
+          <button className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-slate-800 transition-colors">
+            <Plus className="w-4 h-4" />
+            New Task
+          </button>
+        )}
       </div>
     </div>
 
     {/* Metric Grid */}
-    <div className="grid grid-cols-12 gap-8">
-      <div className="col-span-12 lg:col-span-8 space-y-8">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm flex flex-col gap-4">
+    <div className="grid grid-cols-12 gap-6">
+      <div className={cn("col-span-12 space-y-6", isCompact ? "lg:col-span-12" : "lg:col-span-8")}>
+        <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-6", isCompact && "sm:grid-cols-3")}>
+          <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm flex flex-col gap-3">
             <div className="flex justify-between items-start">
-              <span className="text-slate-500 font-label text-[10px] font-black uppercase tracking-[0.2em]">Active Guests</span>
+              <span className="text-slate-500 font-label text-[10px] font-black uppercase tracking-[0.2em]">Guests</span>
               <Users className="w-4 h-4 text-slate-400" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-headline font-black">1,248</span>
-              <span className="text-xs font-bold text-emerald-600 font-label">+12%</span>
+              <span className={cn("font-headline font-black text-slate-900", isCompact ? "text-3xl" : "text-5xl")}>1,248</span>
+              <span className="text-[10px] font-bold text-emerald-600">+12%</span>
             </div>
           </div>
-          <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm flex flex-col gap-4">
+          <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm flex flex-col gap-3">
             <div className="flex justify-between items-start">
               <span className="text-slate-500 font-label text-[10px] font-black uppercase tracking-[0.2em]">In-Zone Status</span>
               <CheckCircle className="w-4 h-4 text-emerald-500" />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-headline font-black">98.2<span className="text-3xl">%</span></span>
-              <span className="text-[10px] text-slate-400 font-label uppercase tracking-widest">Stable</span>
+              <span className={cn("font-headline font-black text-slate-900", isCompact ? "text-3xl" : "text-5xl")}>98.2<span className="text-xl">%</span></span>
             </div>
           </div>
-          <div className="bg-slate-900 text-white rounded-[2rem] p-8 shadow-2xl flex flex-col gap-4 border-l-8 border-secondary">
+          <div className={cn("bg-slate-900 text-white rounded-[2rem] p-6 shadow-2xl flex flex-col gap-3 border-l-8 transition-all", activeAlerts > 0 ? "border-error" : "border-secondary")}>
             <div className="flex justify-between items-start">
-              <span className="text-secondary/80 font-label text-[10px] font-black uppercase tracking-[0.2em]">Alerts (Pending)</span>
-              <AlertTriangle className="w-4 h-4 text-secondary" />
+              <span className="text-secondary/80 font-label text-[10px] font-black uppercase tracking-[0.2em]">Pending Alerts</span>
+              <AlertTriangle className={cn("w-4 h-4", activeAlerts > 0 ? "text-error animate-pulse" : "text-secondary")} />
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-headline font-black text-white">{activeAlerts.toString().padStart(2, '0')}</span>
-              <span className="text-xs font-bold text-secondary font-label">Action Req.</span>
+              <span className={cn("font-headline font-black text-white", isCompact ? "text-3xl" : "text-5xl")}>{activeAlerts.toString().padStart(2, '0')}</span>
             </div>
           </div>
         </div>
 
-        {/* Map Placeholder Replacement */}
-        <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-sm flex flex-col h-[500px] relative group">
-          <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 relative z-20">
+        {/* Action Panel or Map */}
+        <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-sm flex flex-col h-[400px] relative">
+          <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <div className="flex items-center gap-3">
-              <span className="font-headline font-extrabold text-slate-900">Safety Zone Monitoring</span>
-              <div className="flex gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <div className="w-2 h-2 rounded-full bg-slate-300" />
-                <div className="w-2 h-2 rounded-full bg-slate-300" />
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 italic">Facility Monitor</span>
+              <div className="flex gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button className="p-2 text-slate-400 hover:text-slate-600"><Layers className="w-5 h-5" /></button>
-              <button className="px-4 py-2 text-xs font-black text-on-surface uppercase tracking-widest bg-white border border-slate-200 rounded-xl shadow-sm">Details</button>
-            </div>
           </div>
-          
           <div className="flex-1 relative bg-slate-50 overflow-hidden">
             <MockMap rooms={rooms} crises={crises} className="h-full border-none rounded-none" />
           </div>
         </div>
       </div>
 
-      {/* Right Column */}
-      <div className="col-span-12 lg:col-span-4 space-y-8">
-        <div className="bg-white border border-slate-200 rounded-[2.5rem] shadow-sm flex flex-col h-[500px] overflow-hidden">
-          <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">System Activity</h3>
-             <div className="flex items-center gap-2">
-               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-               <span className="text-[10px] font-bold text-on-surface uppercase tracking-widest">Live Feed</span>
+      {/* Sidebar Activity (Hidden if compact on extra small but visible here) */}
+      {!isCompact && (
+        <div className="col-span-12 lg:col-span-4 space-y-8">
+          <div className="bg-white border border-slate-200 rounded-[2.5rem] shadow-sm flex flex-col h-[500px] overflow-hidden">
+             <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">System Activity</h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-[10px] font-bold text-on-surface uppercase tracking-widest">Live Feed</span>
+                </div>
              </div>
+             <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+               {logs.length === 0 && <div className="p-8 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">No logs found.</div>}
+               {logs.slice(0, 5).map((log, i) => {
+                 const t = log.timestamp?.toDate ? log.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}) : 'Just now';
+                 let Icon = Activity;
+                 if (log.category === 'security') Icon = Shield;
+                 if (log.category === 'hardware') Icon = Settings;
+                 
+                 return (
+                 <div key={i} className="flex gap-4 p-5 hover:bg-slate-50 transition-all rounded-[1.5rem] group cursor-pointer">
+                   <div className={cn(
+                     "w-10 h-10 rounded-xl flex items-center justify-center transition-all group-hover:scale-110",
+                     log.status === 'warning' ? "bg-secondary/10 text-secondary" :
+                     log.status === 'success' ? "bg-emerald-500/10 text-emerald-600" :
+                     "bg-slate-100 text-slate-500"
+                   )}>
+                     <Icon className="w-5 h-5" />
+                   </div>
+                   <div className="flex-1">
+                     <div className="flex justify-between items-start">
+                       <h4 className="text-sm font-bold text-on-surface">{log.event}</h4>
+                       <span className="font-mono text-[9px] text-slate-400 font-bold">{t}</span>
+                     </div>
+                     <p className="text-[11px] font-medium text-slate-500 mt-0.5">{log.source}</p>
+                   </div>
+                 </div>
+               )})}
+             </div>
+             <button className="p-4 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface border-t border-slate-100 hover:bg-slate-50 transition-colors">
+               Access Transaction Logs
+             </button>
           </div>
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
-            {logs.length === 0 && <div className="p-8 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">No logs found.</div>}
-            {logs.slice(0, 5).map((log, i) => {
-              const t = log.timestamp?.toDate ? log.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}) : 'Just now';
-              let Icon = Activity;
-              if (log.category === 'security') Icon = Shield;
-              if (log.category === 'hardware') Icon = Settings;
-              
-              return (
-              <div key={i} className="flex gap-4 p-5 hover:bg-slate-50 transition-all rounded-[1.5rem] group cursor-pointer">
-                <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all group-hover:scale-110",
-                  log.status === 'warning' ? "bg-secondary/10 text-secondary" :
-                  log.status === 'success' ? "bg-emerald-500/10 text-emerald-600" :
-                  "bg-slate-100 text-slate-500"
-                )}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <h4 className="text-sm font-bold text-on-surface">{log.event}</h4>
-                    <span className="font-mono text-[9px] text-slate-400 font-bold">{t}</span>
-                  </div>
-                  <p className="text-[11px] font-medium text-slate-500 mt-0.5">{log.source}</p>
-                </div>
-              </div>
-            )})}
-          </div>
-          <button className="p-4 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface border-t border-slate-100 hover:bg-slate-50 transition-colors">
-            Access Transaction Logs
-          </button>
         </div>
-      </div>
+      )}
     </div>
   </div>
 );
@@ -1251,26 +1248,26 @@ export default function App() {
               </motion.div>
             )}
             {view === 'simulation' && (
-              <motion.div key="sim" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} className="flex-1 flex flex-col lg:flex-row gap-8 w-full">
+              <motion.div key="sim" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} className="flex-1 flex flex-col lg:flex-row gap-8 w-full max-w-[1600px] mx-auto">
                 {/* Admin Side */}
-                <div className="flex-[2] bg-white/60 backdrop-blur-3xl border border-outline-variant/20 rounded-[3rem] p-8 overflow-y-auto custom-scrollbar relative shadow-xl min-h-[600px]">
-                  <div className="absolute top-6 right-8 flex items-center gap-2 z-10">
+                <div className="flex-[3] bg-white border border-slate-200 rounded-[3rem] p-10 overflow-y-auto custom-scrollbar relative shadow-xl min-h-[600px]">
+                  <div className="absolute top-8 right-10 flex items-center gap-2 z-10">
                      <span className="px-3 py-1 bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest rounded-full">Admin View</span>
                   </div>
-                  {adminView === 'dashboard' && <AdminDashboard rooms={rooms} />}
+                  {adminView === 'dashboard' && <AdminDashboard rooms={rooms} isCompact={true} />}
                   {adminView === 'incidents' && <AdminIncidents />}
                   {adminView === 'units' && <AdminUnits />}
                   {adminView === 'map' && <ResourceInventoryDashboard />}
                   {adminView === 'logs' && <AdminLogs />}
                 </div>
                 {/* Guest Side (Mobile Mockup) */}
-                <div className="flex-1 lg:max-w-[420px] flex items-center justify-center bg-slate-200/50 rounded-[3rem] p-4 lg:p-6 border border-outline-variant/20 relative shadow-inner min-h-[700px]">
-                  <div className="absolute top-6 left-8 flex items-center gap-2 z-10">
+                <div className="flex-[2] lg:max-w-[480px] flex items-center justify-center bg-slate-100 rounded-[3rem] p-8 border border-slate-200 relative shadow-inner min-h-[700px]">
+                  <div className="absolute top-8 left-10 flex items-center gap-2 z-10">
                      <span className="px-3 py-1 bg-white text-slate-900 border border-slate-200 text-[10px] uppercase font-black tracking-widest rounded-full shadow-sm">Guest App</span>
                   </div>
-                  <div className="w-full max-w-[360px] aspect-[9/19.5] bg-surface rounded-[3rem] border-[14px] border-slate-900 shadow-2xl relative overflow-hidden flex flex-col">
-                    {/* iPhone Notch */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-3xl z-50"></div>
+                  <div className="w-full max-w-[340px] aspect-[9/19.5] bg-surface rounded-[3.5rem] border-[12px] border-slate-950 shadow-2xl relative overflow-hidden flex flex-col ring-4 ring-slate-900/5">
+                    {/* Device Polish */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-slate-950 rounded-b-3xl z-50"></div>
                     <div className="flex-1 overflow-hidden relative flex flex-col bg-[#fcfdff]">
                       {guestView !== 'checkin' && (
                         <div className="px-6 py-4 flex justify-between items-center bg-white border-b border-slate-100 sticky top-0 z-20 shrink-0">
