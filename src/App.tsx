@@ -46,7 +46,9 @@ import {
   Package,
   Box,
   Pill,
-  Droplet
+  Droplet,
+  Menu,
+  X
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import MockMap from './components/MockMap';
@@ -80,32 +82,31 @@ const SCENE_DURATION = {
 
 // --- Components ---
 
-const Sidebar = ({ currentView, currentSubView, setView, setSubView, activeCrisis }: { 
+const SidebarContent = ({ currentView, currentSubView, setView, setSubView, activeCrisis, onClose }: { 
   currentView: View, 
   currentSubView: AdminSubView,
   setView: (v: View) => void,
   setSubView: (sv: AdminSubView) => void,
-  activeCrisis?: CrisisEvent
+  activeCrisis?: CrisisEvent,
+  onClose?: () => void
 }) => {
-  const isAdmin = currentView === 'admin';
   const isCrisisActive = !!activeCrisis;
 
   const toggleMockCrisis = () => {
-    if (isCrisisActive) {
-      clearAllCrises();
-    } else {
-      triggerCrisis({ 
-        crisisType: 'fire', 
-        floor: 4, 
-        roomNumber: '412', 
-        severity: 'critical',
-        description: 'Mock emergency drill initiated for sector evaluation.'
-      });
+    if (isCrisisActive) { clearAllCrises(); } 
+    else {
+      triggerCrisis({ crisisType: 'fire', floor: 4, roomNumber: '412', severity: 'critical', description: 'Mock emergency drill initiated.' });
     }
   };
 
+  const handleNav = (view: View, sub?: AdminSubView) => {
+    setView(view);
+    if (sub) setSubView(sub);
+    onClose?.();
+  };
+
   return (
-    <aside className="hidden md:flex flex-col bg-slate-950 text-secondary font-headline shadow-2xl fixed left-0 top-0 h-full w-72 z-50">
+    <div className="flex flex-col bg-slate-950 text-secondary font-headline h-full w-72">
       <div className="p-8 flex flex-col gap-1 bg-slate-900/50">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-white">
@@ -182,53 +183,76 @@ const Sidebar = ({ currentView, currentSubView, setView, setSubView, activeCrisi
           <span>Log Out</span>
         </button>
       </div>
-    </aside>
+    </div>
   );
 };
 
-const TopBar = ({ title, view, setView }: { title: string, view: View, setView: (v: View) => void }) => (
-  <header className={cn(
-    "fixed top-0 right-0 h-16 z-40 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/10 flex items-center justify-between px-8 transition-all",
-    view === 'pitch' ? "left-0" : "left-72"
-  )}>
-    <div className="flex items-center gap-6">
-      <span className="text-lg font-bold text-on-surface uppercase tracking-widest font-body">{title}</span>
-      {view !== 'pitch' && (
-        <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-tertiary-fixed-dim/10 border border-tertiary-fixed-dim/20">
-          <div className="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse" />
-          <span className="text-[10px] font-bold text-on-tertiary-container uppercase tracking-widest">System Secured</span>
+const Sidebar = ({ currentView, currentSubView, setView, setSubView, activeCrisis, mobileOpen, onMobileClose }: { 
+  currentView: View, currentSubView: AdminSubView,
+  setView: (v: View) => void, setSubView: (sv: AdminSubView) => void,
+  activeCrisis?: CrisisEvent, mobileOpen: boolean, onMobileClose: () => void
+}) => (
+  <>
+    {/* Desktop sidebar */}
+    <aside className="hidden md:flex flex-col shadow-2xl fixed left-0 top-0 h-full w-72 z-50">
+      <SidebarContent currentView={currentView} currentSubView={currentSubView} setView={setView} setSubView={setSubView} activeCrisis={activeCrisis} />
+    </aside>
+    {/* Mobile drawer overlay */}
+    {mobileOpen && (
+      <div className="md:hidden fixed inset-0 z-50 flex">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onMobileClose} />
+        <div className="relative z-10 flex flex-col shadow-2xl w-72 max-w-[85vw]">
+          <SidebarContent currentView={currentView} currentSubView={currentSubView} setView={setView} setSubView={setSubView} activeCrisis={activeCrisis} onClose={onMobileClose} />
         </div>
+      </div>
+    )}
+  </>
+);
+
+const TopBar = ({ title, view, setView, onMenuOpen }: { title: string, view: View, setView: (v: View) => void, onMenuOpen?: () => void }) => (
+  <header className={cn(
+    "fixed top-0 right-0 h-16 z-40 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/10 flex items-center justify-between px-4 md:px-8 transition-all",
+    view === 'pitch' ? "left-0" : "left-0 md:left-72"
+  )}>
+    <div className="flex items-center gap-3">
+      {/* Mobile hamburger — shown only in non-pitch views */}
+      {view !== 'pitch' && (
+        <button onClick={onMenuOpen} className="md:hidden p-2 rounded-lg text-on-surface-variant hover:bg-slate-100 transition-all">
+          <Menu className="w-5 h-5" />
+        </button>
       )}
+      <span className="text-sm md:text-lg font-bold text-on-surface uppercase tracking-widest font-body truncate max-w-[160px] md:max-w-none">{title}</span>
     </div>
 
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-2 md:gap-4">
+      {/* Mobile view switcher pills */}
+      <div className="flex md:hidden items-center gap-1">
+        <button onClick={() => setView('pitch')} className={cn("px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all", view === 'pitch' ? 'bg-secondary text-white' : 'text-slate-400')}>
+          Pitch
+        </button>
+        <button onClick={() => setView('admin')} className={cn("px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all", view === 'admin' ? 'bg-secondary text-white' : 'text-slate-400')}>
+          Ops
+        </button>
+        <button onClick={() => setView('simulation')} className={cn("px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all", view === 'simulation' ? 'bg-error text-white' : 'text-slate-400')}>
+          Demo
+        </button>
+        <button onClick={() => setView('guide')} className={cn("px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all", view === 'guide' ? 'bg-slate-900 text-white' : 'text-slate-400')}>
+          Guest
+        </button>
+      </div>
+
+      {/* Desktop nav */}
       <nav className="hidden lg:flex items-center gap-6 mr-6 border-r border-outline-variant/20 pr-6">
-        <button 
-          onClick={() => setView('pitch')}
-          className={cn("text-xs font-bold uppercase tracking-widest transition-all", view === 'pitch' ? 'text-secondary' : 'text-slate-500 hover:text-on-surface')}
-        >
-          Visual Pitch
-        </button>
-        <button 
-          onClick={() => setView('admin')}
-          className={cn("text-xs font-bold uppercase tracking-widest transition-all", view === 'admin' ? 'text-secondary' : 'text-slate-500 hover:text-on-surface')}
-        >
-          Operations
-        </button>
-        <button 
-          onClick={() => setView('simulation')}
-          className={cn("text-xs font-bold uppercase tracking-widest transition-all px-4 py-1.5 rounded-full border", view === 'simulation' ? 'border-error text-error bg-error/10' : 'border-transparent text-slate-500 hover:text-on-surface')}
-        >
-          <div className={cn("inline-block w-2 h-2 rounded-full mr-2", view === 'simulation' ? 'bg-error animate-pulse' : 'bg-slate-400')} />
-          Live Demo
+        <button onClick={() => setView('pitch')} className={cn("text-xs font-bold uppercase tracking-widest transition-all", view === 'pitch' ? 'text-secondary' : 'text-slate-500 hover:text-on-surface')}>Visual Pitch</button>
+        <button onClick={() => setView('admin')} className={cn("text-xs font-bold uppercase tracking-widest transition-all", view === 'admin' ? 'text-secondary' : 'text-slate-500 hover:text-on-surface')}>Operations</button>
+        <button onClick={() => setView('simulation')} className={cn("text-xs font-bold uppercase tracking-widest transition-all px-4 py-1.5 rounded-full border", view === 'simulation' ? 'border-error text-error bg-error/10' : 'border-transparent text-slate-500 hover:text-on-surface')}>
+          <div className={cn("inline-block w-2 h-2 rounded-full mr-2", view === 'simulation' ? 'bg-error animate-pulse' : 'bg-slate-400')} />Live Demo
         </button>
       </nav>
 
       {view !== 'pitch' && (
-        <div className="flex items-center gap-4">
-          <button className="p-2 text-on-surface-variant hover:bg-slate-100 rounded-full transition-all">
-            <Bell className="w-5 h-5" />
-          </button>
+        <div className="hidden md:flex items-center gap-4">
+          <button className="p-2 text-on-surface-variant hover:bg-slate-100 rounded-full transition-all"><Bell className="w-5 h-5" /></button>
           <div className="w-8 h-8 rounded-full bg-slate-300 overflow-hidden border border-outline-variant/30">
             <img src="https://picsum.photos/seed/admin/100/100" alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
           </div>
@@ -1066,7 +1090,7 @@ const VisualPitch = ({ onComplete }: { onComplete: () => void; key?: string }) =
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-12 relative overflow-hidden">
+    <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-12 relative overflow-hidden">
       {/* Immersive background decoration */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[radial-gradient(circle_at_center,_rgba(0,212,255,0.1)_0%,_transparent_70%)] pointer-events-none" />
 
@@ -1109,11 +1133,11 @@ const VisualPitch = ({ onComplete }: { onComplete: () => void; key?: string }) =
               </div>
             </div>
 
-            <div className="text-center max-w-2xl mx-auto space-y-4">
-              <h2 className="text-6xl font-headline font-black tracking-tighter text-on-surface italic uppercase">
+            <div className="text-center max-w-2xl mx-auto space-y-4 px-4">
+              <h2 className="text-3xl md:text-6xl font-headline font-black tracking-tighter text-on-surface italic uppercase">
                 {scene === 'problem' ? "Chaos by Design." : "Intelligent Safety."}
               </h2>
-              <p className="text-xl text-on-surface-variant font-medium leading-relaxed">
+              <p className="text-base md:text-xl text-on-surface-variant font-medium leading-relaxed">
                 {scene === 'problem' 
                   ? "Standard systems offer noise, not directions. Seconds cost lives."
                   : "A neural safety mesh powered by Google Cloud Platform, guiding every guest individually."}
@@ -1193,8 +1217,8 @@ const VisualPitch = ({ onComplete }: { onComplete: () => void; key?: string }) =
              className="w-full max-w-4xl flex flex-col items-center gap-16 text-center"
           >
             <div className="space-y-6">
-              <h2 className="text-7xl font-headline font-black tracking-tight text-on-surface">Built on <span className="text-secondary italic">Google Cloud.</span></h2>
-              <p className="text-xl text-on-surface-variant font-medium max-w-2xl mx-auto">Scales from 20 rooms to 2,000. Enterprise-grade security meets real-time AI logic at the edge.</p>
+              <h2 className="text-4xl md:text-7xl font-headline font-black tracking-tight text-on-surface">Built on <span className="text-secondary italic">Google Cloud.</span></h2>
+              <p className="text-base md:text-xl text-on-surface-variant font-medium max-w-2xl mx-auto">Scales from 20 rooms to 2,000. Enterprise-grade security meets real-time AI logic at the edge.</p>
             </div>
             
             <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -1304,6 +1328,8 @@ export default function App() {
   const [crises, setCrises] = useState<CrisisEvent[]>([]);
   const [rooms, setRooms] = useState<RoomStatus[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [simTab, setSimTab] = useState<'admin' | 'guest'>('admin');
   
   useEffect(() => { 
     // Secure Session Initialization
@@ -1333,6 +1359,8 @@ export default function App() {
           setView={setView} 
           setSubView={setAdminView}
           activeCrisis={activeCrisis}
+          mobileOpen={mobileMenuOpen}
+          onMobileClose={() => setMobileMenuOpen(false)}
         />
       )}
       
@@ -1341,15 +1369,16 @@ export default function App() {
         view === 'pitch' ? "ml-0" : "md:ml-72"
       )}>
         <TopBar 
-          title={view === 'pitch' ? "NexusResponse • Pitch Deck" : view === 'admin' ? `Sentinel Admin • ${adminView.charAt(0).toUpperCase() + adminView.slice(1)}` : "Sentinel Guest Hub"} 
+          title={view === 'pitch' ? "NexusResponse" : view === 'admin' ? `Sentinel • ${adminView.charAt(0).toUpperCase() + adminView.slice(1)}` : view === 'simulation' ? 'Live Demo' : "SafeStay Guest"} 
           view={view} 
-          setView={setView} 
+          setView={(v) => { setView(v); setMobileMenuOpen(false); }} 
+          onMenuOpen={() => setMobileMenuOpen(true)}
         />
         
         <main className={cn(
           "flex-1 flex flex-col pt-16 relative",
-          view !== 'pitch' && view !== 'simulation' && "p-12 max-w-7xl mx-auto w-full",
-          view === 'simulation' && "p-4 md:p-8"
+          view !== 'pitch' && view !== 'simulation' && "px-4 py-6 md:p-12 max-w-7xl mx-auto w-full",
+          view === 'simulation' && "p-3 md:p-6"
         )}>
           <AnimatePresence mode="wait">
             {view === 'pitch' && <VisualPitch key="pitch" onComplete={() => setView('simulation')} />}
@@ -1400,10 +1429,16 @@ export default function App() {
               </motion.div>
             )}
             {view === 'simulation' && (
-              <motion.div key="sim" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} className="flex-1 flex flex-col lg:flex-row gap-8 w-full max-w-[1600px] mx-auto">
+              <motion.div key="sim" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} className="flex-1 flex flex-col gap-4 w-full max-w-[1600px] mx-auto">
+                {/* Mobile tab switcher */}
+                <div className="flex lg:hidden items-center gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 self-start">
+                  <button onClick={() => setSimTab('admin')} className={cn("px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", simTab === 'admin' ? 'bg-slate-900 text-white' : 'text-slate-400')}>Admin View</button>
+                  <button onClick={() => setSimTab('guest')} className={cn("px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", simTab === 'guest' ? 'bg-slate-900 text-white' : 'text-slate-400')}>Guest App</button>
+                </div>
+                <div className="flex-1 flex flex-col lg:flex-row gap-4 md:gap-8">
                 {/* Admin Side */}
-                <div className="flex-[3] bg-white border border-slate-200 rounded-[3rem] p-10 overflow-y-auto custom-scrollbar relative shadow-xl min-h-[600px]">
-                  <div className="absolute top-8 right-10 flex items-center gap-2 z-10">
+                <div className={cn("flex-[3] bg-white border border-slate-200 rounded-[2rem] md:rounded-[3rem] p-5 md:p-10 overflow-y-auto custom-scrollbar relative shadow-xl min-h-[500px]", simTab === 'guest' ? 'hidden lg:block' : 'block')}>
+                  <div className="absolute top-6 right-6 md:top-8 md:right-10 flex items-center gap-2 z-10">
                      <span className="px-3 py-1 bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest rounded-full">Admin View</span>
                   </div>
                   {adminView === 'dashboard' && <AdminDashboard rooms={rooms} isCompact={true} />}
@@ -1413,7 +1448,7 @@ export default function App() {
                   {adminView === 'logs' && <AdminLogs />}
                 </div>
                 {/* Guest Side (Mobile Mockup) */}
-                <div className="flex-[2] lg:max-w-[480px] flex items-center justify-center bg-slate-100 rounded-[3rem] p-8 border border-slate-200 relative shadow-inner min-h-[700px]">
+                <div className={cn("flex-[2] lg:max-w-[480px] flex items-center justify-center bg-slate-100 rounded-[2rem] md:rounded-[3rem] p-4 md:p-8 border border-slate-200 relative shadow-inner min-h-[600px]", simTab === 'admin' ? 'hidden lg:flex' : 'flex')}>
                   <div className="absolute top-8 left-10 flex items-center gap-2 z-10">
                      <span className="px-3 py-1 bg-white text-slate-900 border border-slate-200 text-[10px] uppercase font-black tracking-widest rounded-full shadow-sm">Guest App</span>
                   </div>
@@ -1487,20 +1522,18 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </main>
 
-        <footer className={cn(
-          "py-8 border-t border-outline-variant/10 flex justify-between items-center bg-slate-50/50 backdrop-blur-md transition-all",
-          view === 'pitch' ? "px-12" : "px-12"
-        )}>
-          <div className="flex gap-6">
+        <footer className="py-6 px-4 md:py-8 md:px-12 border-t border-outline-variant/10 flex flex-col md:flex-row gap-4 md:gap-0 justify-between items-center bg-slate-50/50 backdrop-blur-md">
+          <div className="flex flex-wrap gap-4 items-center">
             <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" /> SYSTEM SECURED • ACTIVE
             </div>
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] border-l border-outline-variant/30 pl-6">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] border-l border-outline-variant/30 pl-4">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-300" /> AI CORE: ANALYZING
             </div>
           </div>
