@@ -1,19 +1,30 @@
 import { GoogleGenAI } from '@google/genai';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export interface EvacuationStep {
   id: number;
   title: string;
   sub: string;
 }
 
+const getFallbackRoute = (): EvacuationStep[] => [
+  { id: 1, title: 'Leave Room', sub: 'Exit your room and check the hallway.' },
+  { id: 2, title: 'Locate Exits', sub: 'Look for illuminated emergency exit signs.' },
+  { id: 3, title: 'Evacuate', sub: 'Proceed down the stairs. Do not use elevators.' }
+];
+
 export const generateEvacuationRoute = async (
   guestRoom: string,
   guestFloor: number,
   crisisContext: string
 ): Promise<EvacuationStep[]> => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey.trim() === '') {
+    console.warn("GEMINI_API_KEY is not set or is using the default placeholder. Using local fallback route.");
+    return getFallbackRoute();
+  }
+
   try {
+    const ai = new GoogleGenAI({ apiKey });
     const prompt = `
       Act as the "NexusResponse" spatial intelligence engine. 
       There is an active emergency: ${crisisContext}. 
@@ -50,9 +61,5 @@ export const generateEvacuationRoute = async (
   }
 
   // Fallback route in case of network/parse errors mapping to hardware edge-mode fallback
-  return [
-    { id: 1, title: 'Leave Room', sub: 'Exit your room and check the hallway.' },
-    { id: 2, title: 'Locate Exits', sub: 'Look for illuminated emergency exit signs.' },
-    { id: 3, title: 'Evacuate', sub: 'Proceed down the stairs. Do not use elevators.' }
-  ];
+  return getFallbackRoute();
 };

@@ -65,7 +65,7 @@ import {
 
 // --- Types ---
 
-type AdminSubView = 'dashboard' | 'incidents' | 'map' | 'units' | 'logs';
+type AdminSubView = 'dashboard' | 'incidents' | 'map' | 'units' | 'logs' | 'settings';
 type GuestSubView = 'checkin' | 'dashboard' | 'map' | 'instructions' | 'sos';
 type View = 'pitch' | 'admin' | 'guide' | 'simulation';
 type Scene = 'problem' | 'activation' | 'pillars' | 'outcome' | 'gcp';
@@ -202,7 +202,7 @@ const SidebarContent = ({ currentView, currentSubView, setView, setSubView, acti
       </div>
 
       <div className="mt-auto pb-4 pt-2 border-t border-slate-800/50 flex flex-col gap-1 font-headline font-bold text-sm">
-        <button className="flex items-center gap-4 text-slate-400 hover:text-slate-100 px-8 py-3 transition-colors">
+        <button onClick={() => handleNav('admin', 'settings')} className="flex items-center gap-4 text-slate-400 hover:text-slate-100 px-8 py-3 transition-colors">
           <Settings className="w-5 h-5" />
           <span>Settings</span>
         </button>
@@ -298,9 +298,9 @@ const AdminIncidents = () => {
 
   return (
     <div className="space-y-10">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-5xl font-headline font-extrabold tracking-tight text-on-surface">Active Incidents</h2>
-        <p className="text-on-surface-variant font-medium">Monitoring ongoing threats and suppression status.</p>
+      <div>
+        <h2 className="text-5xl font-headline font-black italic tracking-tighter uppercase mb-2 pt-2 leading-tight">Active Incidents</h2>
+        <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.3em]">Monitoring ongoing threats and suppression status.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -337,9 +337,9 @@ const AdminUnits = () => {
   useEffect(() => { return streamUnits(setUnits); }, []);
   return (
     <div className="space-y-10">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-5xl font-headline font-extrabold tracking-tight text-on-surface">Responder Units</h2>
-        <p className="text-on-surface-variant font-medium">Managing on-site security and emergency personnel.</p>
+      <div>
+        <h2 className="text-5xl font-headline font-black italic tracking-tighter uppercase mb-2 pt-2 leading-tight">Responder Units</h2>
+        <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.3em]">Managing on-site security and emergency personnel.</p>
       </div>
 
       <div className="bg-white/70 backdrop-blur-md border border-slate-200/60 rounded-[2.5rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
@@ -436,12 +436,34 @@ const ResourceInventoryDashboard = () => {
     }
   };
 
+  const exportManifest = () => {
+    if (displayData.length === 0) return;
+    const headers = ['Floor Level', ...resources.map(r => r.label), 'Status'];
+    const rows = displayData.map(floor => {
+      const rowData = [
+        `Level ${floor.floor} (Sector ${String.fromCharCode(64 + floor.floor)})`,
+        ...resources.map(r => String(floor[r.id] || 0)),
+        'Nominal'
+      ];
+      return rowData.join(',');
+    });
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Nexus_Manifest_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="flex flex-col h-full bg-white/70 backdrop-blur-md border border-slate-200/60 rounded-[3rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
       <div className="p-10 border-b border-slate-100 bg-slate-50/30">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
           <div>
-            <h2 className="text-4xl font-headline font-black italic tracking-tighter uppercase mb-2">Resource Inventory Engine</h2>
+            <h2 className="text-5xl font-headline font-black italic tracking-tighter uppercase mb-2 pt-2 leading-tight">Resource Inventory Engine</h2>
             <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.3em]">Facility-Wide Sentinel Tracking</p>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
@@ -462,7 +484,7 @@ const ResourceInventoryDashboard = () => {
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 border-l-4 border-slate-900 pl-4">Floor-Wise Allocation</h3>
             <div className="flex gap-2">
               <button onClick={() => seedDatabase()} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest mr-2">Reset Data</button>
-              <button className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Export Manifest</button>
+              <button onClick={exportManifest} className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors">Export Manifest</button>
             </div>
           </div>
 
@@ -582,9 +604,9 @@ const AdminLogs = () => {
   return (
     <div className="space-y-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex flex-col gap-2">
-          <h2 className="text-5xl font-headline font-extrabold tracking-tight text-on-surface uppercase italic">System Logs</h2>
-          <p className="text-on-surface-variant font-medium">Complete transaction and activity history for NexusResponse Hub.</p>
+        <div>
+          <h2 className="text-5xl font-headline font-black italic tracking-tighter uppercase mb-2 pt-2 leading-tight">System Logs</h2>
+          <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.3em]">Complete transaction and activity history for NexusResponse Hub.</p>
         </div>
         {logs.length === 0 && (
           <button
@@ -837,9 +859,101 @@ const GuestDashboard = ({ setSubView, activeCrisis }: { setSubView: (sv: GuestSu
   );
 };
 
+const NewIncidentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const [crisisType, setCrisisType] = useState<CrisisEvent['crisisType']>('fire');
+  const [severity, setSeverity] = useState<CrisisEvent['severity']>('high');
+  const [floor, setFloor] = useState<number>(4);
+  const [roomNumber, setRoomNumber] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await triggerCrisis({
+        crisisType,
+        severity,
+        floor,
+        roomNumber,
+        description
+      });
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
+        <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-error/10 text-error flex items-center justify-center">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-headline font-black text-xl uppercase tracking-tight italic">Report Incident</h3>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Initiate Crisis Protocol</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-lg transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-500">Crisis Type</label>
+              <select value={crisisType} onChange={e => setCrisisType(e.target.value as any)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-error/20 outline-none">
+                <option value="fire">Fire</option>
+                <option value="smoke">Smoke</option>
+                <option value="intrusion">Intrusion</option>
+                <option value="panic">Panic / Medical</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-500">Severity</label>
+              <select value={severity} onChange={e => setSeverity(e.target.value as any)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-error/20 outline-none">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-500">Floor Number</label>
+              <input type="number" value={floor} onChange={e => setFloor(parseInt(e.target.value))} required min="1" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-error/20 outline-none" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-500">Room / Zone</label>
+              <input type="text" value={roomNumber} onChange={e => setRoomNumber(e.target.value)} required placeholder="e.g. 412" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-error/20 outline-none" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Incident Details</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={3} placeholder="Describe the situation..." className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-error/20 outline-none resize-none" />
+          </div>
+          <div className="pt-4 flex justify-end gap-3">
+            <button type="button" onClick={onClose} className="px-6 py-3 font-black text-sm uppercase tracking-widest text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">Cancel</button>
+            <button type="submit" disabled={isSubmitting} className="px-6 py-3 bg-[#c62828] text-white font-black text-sm uppercase tracking-widest rounded-xl hover:bg-red-800 transition-colors shadow-lg shadow-red-500/30 disabled:opacity-50">
+              {isSubmitting ? 'Transmitting...' : 'Trigger Alert'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
 const AdminDashboard = ({ rooms, isCompact = false, setSubView }: { rooms: RoomStatus[], isCompact?: boolean, setSubView?: (v: AdminSubView) => void }) => {
   const [logs, setLogs] = useState<OperationalLog[]>(generateMockLogs());
   const [crises, setCrises] = useState<CrisisEvent[]>([]);
+  const [showIncidentModal, setShowIncidentModal] = useState(false);
 
   useEffect(() => {
     const unsubLogs = streamLogs((dbLogs) => {
@@ -864,6 +978,10 @@ const AdminDashboard = ({ rooms, isCompact = false, setSubView }: { rooms: RoomS
           <h2 className={cn("font-headline font-black tracking-tight text-on-surface uppercase italic leading-none", isCompact ? "text-3xl" : "text-5xl")}>Real-Time Operations</h2>
         </div>
         <div className="flex items-center gap-3">
+          <button onClick={() => setShowIncidentModal(true)} className="flex items-center gap-2 bg-[#c62828] hover:bg-red-800 transition-colors text-white px-5 py-2.5 rounded-xl shadow-lg shadow-red-500/30 active:scale-95 group">
+            <div className="p-1 bg-white/20 rounded-md group-hover:bg-white/30 transition-colors"><Plus className="w-4 h-4" /></div>
+            <span className="text-[10px] font-black uppercase tracking-widest">New Incident</span>
+          </button>
           <div className="hidden sm:flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-lg text-[10px] font-label font-medium text-slate-700 shadow-sm">
             <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
           </div>
@@ -986,6 +1104,7 @@ const AdminDashboard = ({ rooms, isCompact = false, setSubView }: { rooms: RoomS
           </div>
         )}
       </div>
+      <NewIncidentModal isOpen={showIncidentModal} onClose={() => setShowIncidentModal(false)} />
     </div>
   );
 };
@@ -1308,6 +1427,62 @@ const VisualPitch = ({ onComplete }: { onComplete: () => void; key?: string }) =
   );
 };
 
+const AdminSettings = () => {
+  const [settings, setSettings] = useState({
+    audioAlerts: true,
+    autoDeploy: false,
+    highContrast: false,
+    autoClearLogs: true,
+    smsNotifications: true,
+    dronePatrols: false,
+    aiInsights: true,
+    guestAnnouncements: true,
+    lockdownMode: false,
+  });
+
+  const toggleSetting = (key: keyof typeof settings) => {
+    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  return (
+    <div className="space-y-10">
+      <div>
+        <h2 className="text-5xl font-headline font-black italic tracking-tighter uppercase mb-2 pt-2 leading-tight">Settings</h2>
+        <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.3em]">Configure System Preferences and Alerts.</p>
+      </div>
+
+      <div className="bg-white/70 backdrop-blur-md border border-slate-200/60 rounded-[2.5rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-10">
+        <div className="space-y-8">
+          {[
+            { id: 'audioAlerts', label: 'Enable Audio Alerts', desc: 'Play sounds for critical incidents and updates.' },
+            { id: 'smsNotifications', label: 'SMS Notifications', desc: 'Receive critical alerts via SMS to registered devices.' },
+            { id: 'autoDeploy', label: 'Auto-Deploy Units', desc: 'Automatically assign nearest responder units to new incidents.' },
+            { id: 'dronePatrols', label: 'Automated Drone Patrols', desc: 'Dispatch sentinel drones for automated perimeter checks.' },
+            { id: 'aiInsights', label: 'AI Threat Insights', desc: 'Utilize Vertex AI to predict potential security vulnerabilities.' },
+            { id: 'guestAnnouncements', label: 'Public Address Announcements', desc: 'Automatically broadcast synthesized voice warnings to affected zones.' },
+            { id: 'lockdownMode', label: 'Strict Lockdown Mode', desc: 'Immediately secure all automated doors upon critical alert.' },
+            { id: 'highContrast', label: 'High Contrast Mode', desc: 'Increase visual contrast across the dashboard.' },
+            { id: 'autoClearLogs', label: 'Auto-Clear Logs', desc: 'Automatically archive resolved operational logs after 24 hours.' },
+          ].map(feature => (
+            <div key={feature.id} className="flex items-center justify-between border-b border-slate-100 pb-6 last:border-0 last:pb-0">
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-black uppercase tracking-widest text-slate-900">{feature.label}</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{feature.desc}</span>
+              </div>
+              <button 
+                onClick={() => toggleSetting(feature.id as keyof typeof settings)}
+                className={cn("w-14 h-8 rounded-full transition-colors relative", settings[feature.id as keyof typeof settings] ? "bg-emerald-500" : "bg-slate-300")}
+              >
+                <div className={cn("w-6 h-6 bg-white rounded-full absolute top-1 transition-all shadow-sm", settings[feature.id as keyof typeof settings] ? "left-7" : "left-1")} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AdminLogin = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -1447,6 +1622,7 @@ export default function App() {
                     {adminView === 'units' && <AdminUnits />}
                     {adminView === 'map' && <ResourceInventoryDashboard />}
                     {adminView === 'logs' && <AdminLogs />}
+                    {adminView === 'settings' && <AdminSettings />}
                   </>
                 ) : (
                   <AdminLogin onLoginSuccess={() => setAdminView('dashboard')} />
@@ -1501,6 +1677,7 @@ export default function App() {
                     {adminView === 'units' && <AdminUnits />}
                     {adminView === 'map' && <ResourceInventoryDashboard />}
                     {adminView === 'logs' && <AdminLogs />}
+                    {adminView === 'settings' && <AdminSettings />}
                   </div>
                   {/* Guest Side (Mobile Mockup) */}
                   <div className={cn("flex-[2] lg:max-w-[480px] flex items-center justify-center bg-slate-100 rounded-[2rem] md:rounded-[3rem] p-4 md:p-8 border border-slate-200 relative shadow-inner min-h-[600px]", simTab === 'admin' ? 'hidden lg:flex' : 'flex')}>
@@ -1529,7 +1706,7 @@ export default function App() {
                           {guestView === 'instructions' && <GuestGuide onBack={() => setGuestView('dashboard')} onNavigate={setGuestView} activeCrisis={activeCrisis} roomNumber="412" floorNumber={4} />}
                           {guestView === 'map' && (
                             <div className="flex-1 p-4 bg-[#fcfdff] overflow-y-auto custom-scrollbar">
-                              <GuestFacilityMap activeCrisis={activeCrisis} />
+                              <GuestFacilityMap activeCrisis={activeCrisis} isLiveDemoMobile={true} />
                             </div>
                           )}
                           {guestView === 'sos' && (
