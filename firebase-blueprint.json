@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "crisis_event": {
+      "title": "Crisis Event",
+      "description": "Represents an emergency incident detected by sensors.",
+      "type": "object",
+      "properties": {
+        "crisisType": { "type": "string", "enum": ["fire", "smoke", "intrusion", "panic"] },
+        "floor": { "type": "integer" },
+        "roomNumber": { "type": "string" },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "contained", "resolved"] }
+      },
+      "required": ["crisisType", "floor", "roomNumber", "severity", "timestamp", "status"]
+    },
+    "room_status": {
+      "title": "Room Status",
+      "description": "Real-time occupancy and evacuation status of a hotel room.",
+      "type": "object",
+      "properties": {
+        "roomNumber": { "type": "string" },
+        "floor": { "type": "integer" },
+        "occupancyStatus": { "type": "string", "enum": ["evacuated", "occupied", "unknown"] },
+        "hasAlert": { "type": "boolean" },
+        "lastCheckIn": { "type": "string", "format": "date-time" }
+      },
+      "required": ["roomNumber", "floor", "occupancyStatus"]
+    },
+    "responder_unit": {
+      "title": "Responder Unit",
+      "description": "Security unit assigned to a sector.",
+      "type": "object",
+      "properties": {
+        "unitId": { "type": "string" },
+        "commander": { "type": "string" },
+        "sectorId": { "type": "string" },
+        "status": { "type": "string", "enum": ["standby", "patrol", "active", "evacuating"] },
+        "lastActive": { "type": "string", "format": "date-time" }
+      },
+      "required": ["unitId", "commander", "sectorId", "status"]
+    },
+    "operational_log": {
+      "title": "Operational Log",
+      "description": "System transaction log for audit trail.",
+      "type": "object",
+      "properties": {
+        "timestamp": { "type": "string", "format": "date-time" },
+        "event": { "type": "string" },
+        "source": { "type": "string" },
+        "status": { "type": "string" },
+        "category": { "type": "string", "enum": ["system", "security", "alert", "hardware"] }
+      },
+      "required": ["timestamp", "event", "source", "status", "category"]
+    }
+  },
+  "firestore": {
+    "/crises/{crisisId}": {
+      "schema": "crisis_event",
+      "description": "Collection of active and historical crisis events."
+    },
+    "/rooms/{roomId}": {
+      "schema": "room_status",
+      "description": "Registry of room occupancy and safety status."
+    },
+    "/units/{unitId}": {
+      "schema": "responder_unit",
+      "description": "Real-time tracking of security personnel."
+    },
+    "/logs/{logId}": {
+      "schema": "operational_log",
+      "description": "System transaction history."
+    }
+  }
+}

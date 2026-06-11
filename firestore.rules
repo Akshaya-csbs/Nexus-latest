@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitives
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128; }
+
+    // Phase 4: Entity Blueprints
+    function isValidCrisis(data) {
+      return data.crisisType is string
+          && data.floor is int
+          && data.severity is string
+          && data.status is string;
+    }
+
+    function isValidRoom(data) {
+      return data.roomNumber is string
+          && data.occupancyStatus is string;
+    }
+
+    function isValidLog(data) {
+      return data.event is string
+          && data.source is string
+          && data.category is string;
+    }
+
+    // --- Collection Routes ---
+
+    match /crises/{crisisId} {
+      allow read: if true;
+      allow create: if isValidCrisis(incoming());
+      allow update: if isValidCrisis(incoming());
+      allow delete: if true;
+    }
+
+    match /rooms/{roomId} {
+      allow read: if true;
+      allow write: if true; // Demo needs flexible room updates
+    }
+
+    match /units/{unitId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /logs/{logId} {
+      allow read: if true;
+      allow create: if isValidLog(incoming());
+      allow delete: if true;
+    }
+  }
+}
