@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
 import { Shield, ShieldAlert, Crosshair, Layers, MapPin } from 'lucide-react';
+import FacilityMap from './FacilityMap';
 
 interface GuestFacilityMapProps {
   activeCrisis?: any;
@@ -116,140 +117,14 @@ const GuestFacilityMap: React.FC<GuestFacilityMapProps> = ({ activeCrisis, isLiv
         </div>
 
         {/* The Map Graphic */}
-        <div className={`flex-grow w-full relative h-full overflow-auto custom-scrollbar flex md:justify-center ${isLiveDemoMobile ? "items-start" : "items-center"}`}>
-          <div className={`w-[600px] md:w-full h-auto md:h-full flex justify-center shrink-0 mx-auto ${isLiveDemoMobile ? "items-start" : "items-center"}`}>
-            <svg className="w-full h-auto md:h-full drop-shadow-xl" viewBox={isLiveDemoMobile ? "200 55 700 375" : "200 10 700 450"} preserveAspectRatio="xMidYMid meet">
-            <defs>
-              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" strokeWidth="0.5"/>
-              </pattern>
-            </defs>
-
-            {/* Background Grid */}
-            <rect width="1000" height="500" fill="url(#grid)" rx="24" className="stroke-slate-200 stroke-2" />
-
-            {/* Horizontal Main Corridor */}
-            <rect x="210" y="220" width="680" height="60" fill="#e2e8f0" />
-
-            {/* Vertical Intersecting Corridor */}
-            <rect x="470" y="60" width="60" height="380" fill="#e2e8f0" />
-
-            {/* Corridor Text */}
-            <text x="500" y="258" textAnchor="middle" className="font-headline font-black text-2xl md:text-3xl uppercase tracking-[0.3em] fill-slate-500 stroke-[#f8f9fa] stroke-[6px] pointer-events-none" style={{ paintOrder: 'stroke fill' }}>Main Corridor</text>
-            
-            {/* Elevator Block */}
-            <g transform="translate(470, 20)">
-              <rect width="60" height="40" rx="8" className="fill-slate-300 stroke-slate-400 stroke-2" />
-              <text x="30" y="20" textAnchor="middle" dominantBaseline="middle" className="font-bold text-[10px] uppercase fill-slate-700 tracking-wider">Elevator</text>
-            </g>
-
-            {/* Left Stairs */}
-            <g transform="translate(210, 210)">
-              <rect width="40" height="80" rx="8" className="fill-emerald-100 stroke-emerald-300 stroke-2" />
-              <text x="20" y="20" textAnchor="middle" className="font-bold text-[8px] uppercase fill-emerald-800 tracking-wider">Exit</text>
-              <path d="M 10 30 L 30 30 M 10 40 L 30 40 M 10 50 L 30 50 M 10 60 L 30 60 M 10 70 L 30 70" className="stroke-emerald-300 stroke-2" />
-            </g>
-
-            {/* Right Stairs */}
-            <g transform="translate(850, 210)">
-              <rect width="40" height="80" rx="8" className="fill-emerald-100 stroke-emerald-300 stroke-2" />
-              <text x="20" y="20" textAnchor="middle" className="font-bold text-[8px] uppercase fill-emerald-800 tracking-wider">Exit</text>
-              <path d="M 10 30 L 30 30 M 10 40 L 30 40 M 10 50 L 30 50 M 10 60 L 30 60 M 10 70 L 30 70" className="stroke-emerald-300 stroke-2" />
-            </g>
-
-            {/* Rooms */}
-            {ROOMS_DATA.map((room) => {
-              const isCurrentLocation = room.id === guestLocation;
-              const isCrisis = activeCrisis && activeCrisis.roomNumber === room.id;
-              const isSafe = !isCrisis;
-
-              let fillClass = "fill-[#fcfdff]";
-              let strokeClass = "stroke-slate-300 stroke-[1.5px]";
-              let textClass = "fill-slate-800";
-              let doorClass = "fill-slate-300";
-
-              if (isSafe) {
-                fillClass = "fill-emerald-50/70";
-                strokeClass = "stroke-emerald-200 stroke-[1.5px]";
-                textClass = "fill-emerald-900";
-                doorClass = "fill-emerald-200";
-              }
-              if (isCrisis) {
-                fillClass = "fill-error/10";
-                strokeClass = "stroke-error stroke-2";
-                textClass = "fill-error";
-                doorClass = "fill-error/50";
-              }
-
-              return (
-                <g 
-                  key={room.id} 
-                  transform={`translate(${room.x}, ${room.y})`}
-                  onClick={() => setSelectedRoomId(room.id)}
-                  className="cursor-pointer group"
-                >
-                  <rect 
-                    width="80" height="70" rx="12" 
-                    className={cn("transition-colors duration-500", fillClass, strokeClass)} 
-                  />
-                  {isCrisis && (
-                    <rect 
-                      width="90" height="80" x="-5" y="-5" rx="16" 
-                      className="fill-error/20 stroke-error/40 stroke-2 animate-ping pointer-events-none" 
-                    />
-                  )}
-                  <text 
-                    x="40" y="40" 
-                    textAnchor="middle" dominantBaseline="middle" 
-                    className={cn("font-headline font-black text-xl italic transition-colors duration-500", textClass)}
-                  >
-                    {room.id}
-                  </text>
-                  
-                  {/* Door cutout indicator */}
-                  {room.y < 250 ? (
-                    <path d="M 35 70 L 40 60 L 45 70 Z" className={cn("transition-colors duration-500", doorClass)} />
-                  ) : (
-                    <path d="M 35 0 L 40 10 L 45 0 Z" className={cn("transition-colors duration-500", doorClass)} />
-                  )}
-
-                  {/* YOU ARE HERE Marker */}
-                  {isCurrentLocation && (
-                    <g transform="translate(40, 10)">
-                      <text y="-15" textAnchor="middle" className="font-black text-[8px] uppercase tracking-widest fill-emerald-600">You Are</text>
-                      <text y="-5" textAnchor="middle" className="font-black text-[8px] uppercase tracking-widest fill-emerald-600">Here</text>
-                      <path d="M -8 10 C -8 4 8 4 8 10 C 8 16 0 24 0 24 C 0 24 -8 16 -8 10 Z" className="fill-emerald-500 stroke-white stroke-2 drop-shadow-md" />
-                      <circle cx="0" cy="10" r="3" fill="white" />
-                    </g>
-                  )}
-                </g>
-              );
-            })}
-
-            {/* Evacuation Route */}
-            {activeCrisis && route && (
-              <g className="pointer-events-none">
-                <path 
-                  d={route.path} 
-                  className="fill-none stroke-error stroke-[4px] opacity-30" 
-                  strokeLinecap="round" strokeLinejoin="round" 
-                />
-                <path 
-                  d={route.path} 
-                  className="fill-none stroke-error stroke-[4px] animate-[dash_2s_linear_infinite]" 
-                  strokeDasharray="12,12" 
-                  strokeLinecap="round" strokeLinejoin="round" 
-                />
-                {/* Route Destination Node at the Exit */}
-                <circle 
-                  cx={route.targetX} 
-                  cy="250" 
-                  r="6" 
-                  className="fill-error stroke-white stroke-[1.5px] drop-shadow-sm" 
-                />
-              </g>
-            )}
-          </svg>
+        <div className={`flex-grow w-full relative h-full overflow-hidden flex md:justify-center ${isLiveDemoMobile ? "items-start" : "items-center"}`}>
+          <div className="w-full h-full absolute inset-0 rounded-[2.5rem] overflow-hidden">
+            <FacilityMap 
+              guestLocation={guestLocation}
+              selectedRoomId={selectedRoomId}
+              onRoomSelect={setSelectedRoomId}
+              activeCrisis={activeCrisis}
+            />
           </div>
         </div>
       </div>

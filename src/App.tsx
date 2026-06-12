@@ -270,7 +270,7 @@ const TopBar = ({ title, view, setView, onMenuOpen }: { title: string, view: Vie
       </div>
 
       {/* Desktop nav */}
-      <nav className="hidden lg:flex items-center gap-6 mr-6 border-r border-outline-variant/20 pr-6">
+      <nav className="hidden md:flex items-center gap-6 mr-6 border-r border-outline-variant/20 pr-6">
         <button onClick={() => setView('pitch')} className={cn("text-xs font-bold uppercase tracking-widest transition-all", view === 'pitch' ? 'text-secondary' : 'text-slate-500 hover:text-on-surface')}>Visual Pitch</button>
         <button onClick={() => setView('admin')} className={cn("text-xs font-bold uppercase tracking-widest transition-all", view === 'admin' ? 'text-secondary' : 'text-slate-500 hover:text-on-surface')}>Operations</button>
         <button onClick={() => setView('simulation')} className={cn("text-xs font-bold uppercase tracking-widest transition-all px-4 py-1.5 rounded-full border", view === 'simulation' ? 'border-error text-error bg-error/10' : 'border-transparent text-slate-500 hover:text-on-surface')}>
