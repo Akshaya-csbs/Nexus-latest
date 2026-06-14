@@ -6,6 +6,7 @@ import FacilityMap from './FacilityMap';
 
 interface GuestFacilityMapProps {
   activeCrisis?: any;
+  isLiveDemoMobile?: boolean;
 }
 
 const ROOMS_DATA = [
@@ -37,13 +38,13 @@ const GuestFacilityMap: React.FC<GuestFacilityMapProps> = ({ activeCrisis, isLiv
     const isTop = targetRoom.y < 250;
     const isLeftBlock = targetRoom.x < 500;
     const corridorY = 250;
-    
+
     const targetX = isLeftBlock ? 260 : 840;
     const isInnerRow = isTop ? targetRoom.y === 140 : targetRoom.y === 300;
-    
+
     let path = `M ${startX} ${startY}`;
     let svgDistance = 0;
-    
+
     if (isInnerRow) {
       path += ` L ${startX} ${corridorY} L ${targetX} ${corridorY}`;
       svgDistance = Math.abs(corridorY - startY) + Math.abs(targetX - startX);
@@ -52,12 +53,12 @@ const GuestFacilityMap: React.FC<GuestFacilityMapProps> = ({ activeCrisis, isLiv
       path += ` L ${startX} ${subCorridorY} L ${targetX} ${subCorridorY} L ${targetX} ${corridorY}`;
       svgDistance = Math.abs(subCorridorY - startY) + Math.abs(targetX - startX) + Math.abs(corridorY - subCorridorY);
     }
-    
+
     // Convert SVG units to real-world feet (approx 0.6 ft per unit)
     const distanceFt = Math.round(svgDistance * 0.6);
     // Average emergency walking speed ~ 4 ft/sec
     const timeSec = Math.round(distanceFt / 4);
-    
+
     return { path, targetX, distanceFt, timeSec };
   };
 
@@ -79,7 +80,7 @@ const GuestFacilityMap: React.FC<GuestFacilityMapProps> = ({ activeCrisis, isLiv
               )}
             </div>
           </div>
-          
+
           {route && (
             <div className={`flex items-center bg-black/15 rounded-xl p-3 px-5 md:px-6 justify-center border border-white/5 ${isLiveDemoMobile ? "w-full" : "w-full md:w-auto md:justify-end"}`}>
               <div className="flex flex-col items-center pr-4 md:pr-6">
@@ -103,7 +104,7 @@ const GuestFacilityMap: React.FC<GuestFacilityMapProps> = ({ activeCrisis, isLiv
           <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Standard Operations</span>
         </div>
       )}
-      
+
       {/* Map Container */}
       <div className={`w-full flex-1 bg-[#f8f9fa] border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-sm flex flex-col relative min-h-[500px] ${isLiveDemoMobile ? "-mt-12 z-0" : ""}`}>
         {/* Contextual Map Tools */}
@@ -119,7 +120,7 @@ const GuestFacilityMap: React.FC<GuestFacilityMapProps> = ({ activeCrisis, isLiv
         {/* The Map Graphic */}
         <div className={`flex-grow w-full relative h-full overflow-hidden flex md:justify-center ${isLiveDemoMobile ? "items-start" : "items-center"}`}>
           <div className="w-full h-full absolute inset-0 rounded-[2.5rem] overflow-hidden">
-            <FacilityMap 
+            <FacilityMap
               guestLocation={guestLocation}
               selectedRoomId={selectedRoomId}
               onRoomSelect={setSelectedRoomId}

@@ -48,7 +48,8 @@ import {
   Pill,
   Droplet,
   Menu,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
 import { cn } from './lib/utils';
 import MockMap from './components/MockMap';
@@ -110,185 +111,244 @@ const generateMockLogs = (): OperationalLog[] => {
 
 // --- Components ---
 
-const SidebarContent = ({ currentView, currentSubView, setView, setSubView, activeCrisis, onClose }: {
+const NavigationRail = ({ currentView, currentSubView, setView, setSubView, activeCrisis }: {
+  currentView: View,
+  currentSubView: AdminSubView,
+  setView: (v: View) => void,
+  setSubView: (sv: AdminSubView) => void,
+  activeCrisis?: CrisisEvent
+}) => {
+  const isCrisisActive = !!activeCrisis;
+
+  const toggleMockCrisis = () => {
+    if (isCrisisActive) {
+      clearAllCrises();
+    } else {
+      triggerCrisis({ crisisType: 'fire', floor: 4, roomNumber: '412', severity: 'critical', description: 'Mock emergency drill initiated.' });
+    }
+  };
+
+  const navItems = [
+    { id: 'dashboard', label: 'Operations', icon: Layers },
+    { id: 'incidents', label: 'Active Incidents', icon: ShieldAlert, alert: isCrisisActive },
+    { id: 'map', label: 'Resource Map', icon: MapIcon },
+    { id: 'units', label: 'Responders', icon: Users },
+    { id: 'logs', label: 'System Logs', icon: Activity },
+    { id: 'settings', label: 'Settings', icon: Settings },
+  ];
+
+  return (
+    <aside className="hidden md:flex flex-col items-center bg-[#111827] border-r border-white/10 w-[72px] h-screen fixed left-0 top-0 z-50 py-6 justify-between">
+      <div className="flex flex-col items-center gap-8 w-full">
+        {/* Brand Shield Logo */}
+        <div
+          onClick={toggleMockCrisis}
+          className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer transition-all border shadow-lg",
+            isCrisisActive
+              ? "bg-[#EF4444]/20 border-[#EF4444] text-[#EF4444] animate-pulse"
+              : "bg-[#22C55E]/10 border-[#22C55E]/20 text-[#22C55E]"
+          )}
+          title={isCrisisActive ? "Click to suppress alert" : "Click to initiate mock crisis"}
+        >
+          <Shield className="w-5 h-5 fill-current" />
+        </div>
+
+        {/* Nav Items */}
+        <div className="flex flex-col gap-3 w-full px-2">
+          {navItems.map((item) => {
+            const isActive = (currentView === 'admin' || currentView === 'simulation') && currentSubView === item.id;
+            return (
+              <button
+                key={item.id}
+                title={item.label}
+                onClick={() => {
+                  if (currentView !== 'simulation') setView('admin');
+                  setSubView(item.id as AdminSubView);
+                }}
+                className={cn(
+                  "relative group w-12 h-12 rounded-xl flex flex-col items-center justify-center transition-all",
+                  isActive
+                    ? "bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#3B82F6]"
+                    : "text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/5"
+                )}
+              >
+                <item.icon className="w-5 h-5" />
+                {item.alert && (
+                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
+                )}
+                {/* Micro visual label beneath */}
+                <span className="text-[7px] font-black uppercase tracking-widest mt-0.5 opacity-60 group-hover:opacity-100">{item.id.slice(0, 3)}</span>
+
+                {/* Tooltip */}
+                <div className="absolute left-16 bg-[#111827] border border-white/10 text-[#F8FAFC] text-[10px] font-black uppercase tracking-wider px-2 py-1 rounded shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                  {item.label}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-4 w-full px-2">
+        {/* Guest View Toggle */}
+        <button
+          title="Guest View"
+          onClick={() => setView('guide')}
+          className={cn(
+            "relative group w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+            currentView === 'guide'
+              ? "bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#3B82F6]"
+              : "text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/5"
+          )}
+        >
+          <Smartphone className="w-5 h-5" />
+          <span className="text-[7px] font-black uppercase tracking-widest mt-0.5 opacity-60">GST</span>
+        </button>
+
+        {/* Logout */}
+        <button
+          title="Log Out"
+          onClick={async () => { await logoutUser(); setView('pitch'); }}
+          className="w-12 h-12 rounded-xl flex flex-col items-center justify-center text-[#94A3B8] hover:text-[#EF4444] hover:bg-white/5 transition-all"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="text-[7px] font-black uppercase tracking-widest mt-0.5">OUT</span>
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+const Sidebar = ({ currentView, currentSubView, setView, setSubView, activeCrisis, mobileOpen, onMobileClose }: {
   currentView: View,
   currentSubView: AdminSubView,
   setView: (v: View) => void,
   setSubView: (sv: AdminSubView) => void,
   activeCrisis?: CrisisEvent,
-  onClose?: () => void
-}) => {
-  const isCrisisActive = !!activeCrisis;
-
-  const toggleMockCrisis = () => {
-    if (isCrisisActive) { clearAllCrises(); }
-    else {
-      triggerCrisis({ crisisType: 'fire', floor: 4, roomNumber: '412', severity: 'critical', description: 'Mock emergency drill initiated.' });
-    }
-  };
-
-  const handleNav = (view: View, sub?: AdminSubView) => {
-    setView(view);
-    if (sub) setSubView(sub);
-    onClose?.();
-  };
-
-  return (
-    <div className="flex flex-col bg-slate-950 text-secondary font-headline h-full w-72">
-      <div className="p-8 flex flex-col gap-1 bg-slate-900/50">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-white">
-            <Shield className="w-6 h-6" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-white font-black uppercase tracking-widest text-sm leading-tight">Sentinel Admin</span>
-            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Vigilant Watch v42</span>
-          </div>
-        </div>
-      </div>
-
-      <nav className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto custom-scrollbar font-headline font-bold text-sm tracking-wide">
-        {[
-          { id: 'dashboard', label: 'Dashboard', icon: Layers },
-          { id: 'incidents', label: 'Active Incidents', icon: ShieldAlert },
-          { id: 'map', label: 'Resource Map', icon: MapIcon },
-          { id: 'units', label: 'Responder Units', icon: Users },
-          { id: 'logs', label: 'System Logs', icon: Activity },
-        ].map((item) => (
-          <button
-            key={item.id}
-            onClick={() => {
-              if (currentView !== 'simulation') setView('admin');
-              setSubView(item.id as AdminSubView);
-            }}
-            className={cn(
-              "flex items-center gap-4 py-3 px-8 mx-2 transition-all rounded-lg",
-              (currentView === 'admin' || currentView === 'simulation') && currentSubView === item.id
-                ? "bg-slate-800 text-secondary border-l-4 border-secondary translate-x-1"
-                : "text-slate-400 hover:text-slate-100 hover:bg-slate-900/50"
-            )}
-          >
-            <item.icon className="w-5 h-5" />
-            <span>{item.label}</span>
-          </button>
-        ))}
-
-        <div className="mx-4 my-8 pt-4 border-t border-slate-800/30">
-          <button
-            onClick={() => setView('guide')}
-            className={cn(
-              "w-full flex items-center gap-4 py-3 px-4 rounded-lg transition-all",
-              currentView === 'guide' ? "bg-slate-800 text-secondary border-l-4 border-secondary" : "text-slate-400 hover:text-slate-100 hover:bg-slate-900/50"
-            )}
-          >
-            <Smartphone className="w-5 h-5" />
-            <span>Guest Guide View</span>
-          </button>
-        </div>
-      </nav>
-
-      <div className="px-6 pb-6">
-        <button
-          onClick={toggleMockCrisis}
-          className={cn(
-            "w-full py-4 rounded-xl font-black text-sm uppercase tracking-wider shadow-lg transition-all active:scale-95",
-            isCrisisActive
-              ? "bg-emerald-500 text-white shadow-emerald-500/20"
-              : "bg-[#c00000] text-white shadow-red-500/20"
-          )}
-        >
-          {isCrisisActive ? 'End Mock Crisis' : 'Mock Crisis'}
-        </button>
-      </div>
-
-      <div className="mt-auto pb-4 pt-2 border-t border-slate-800/50 flex flex-col gap-1 font-headline font-bold text-sm">
-        <button onClick={() => handleNav('admin', 'settings')} className="flex items-center gap-4 text-slate-400 hover:text-slate-100 px-8 py-3 transition-colors">
-          <Settings className="w-5 h-5" />
-          <span>Settings</span>
-        </button>
-        <button onClick={async () => { await logoutUser(); setView('pitch'); }} className="flex items-center gap-4 text-slate-400 hover:text-slate-100 px-8 py-3 transition-colors border-t border-slate-800/30">
-          <LogOut className="w-5 h-5" />
-          <span>Log Out</span>
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const Sidebar = ({ currentView, currentSubView, setView, setSubView, activeCrisis, mobileOpen, onMobileClose }: {
-  currentView: View, currentSubView: AdminSubView,
-  setView: (v: View) => void, setSubView: (sv: AdminSubView) => void,
-  activeCrisis?: CrisisEvent, mobileOpen: boolean, onMobileClose: () => void
+  mobileOpen: boolean,
+  onMobileClose: () => void
 }) => (
   <>
-    {/* Desktop sidebar */}
-    <aside className="hidden md:flex flex-col shadow-2xl fixed left-0 top-0 h-full w-72 z-50">
-      <SidebarContent currentView={currentView} currentSubView={currentSubView} setView={setView} setSubView={setSubView} activeCrisis={activeCrisis} />
-    </aside>
-    {/* Mobile drawer overlay */}
+    <NavigationRail currentView={currentView} currentSubView={currentSubView} setView={setView} setSubView={setSubView} activeCrisis={activeCrisis} />
+    {/* Mobile Drawer */}
     {mobileOpen && (
       <div className="md:hidden fixed inset-0 z-50 flex">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onMobileClose} />
-        <div className="relative z-10 flex flex-col shadow-2xl w-72 max-w-[85vw]">
-          <SidebarContent currentView={currentView} currentSubView={currentSubView} setView={setView} setSubView={setSubView} activeCrisis={activeCrisis} onClose={onMobileClose} />
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onMobileClose} />
+        <div className="relative z-10 flex flex-col bg-[#111827] w-64 max-w-[85vw] p-6 justify-between border-r border-white/10">
+          <div className="space-y-8">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-[#EF4444]/15 flex items-center justify-center text-[#EF4444] border border-[#EF4444]/20"><Shield className="w-5 h-5" /></div>
+              <div>
+                <p className="text-xs font-black text-[#F8FAFC] tracking-wider leading-none">SENTINEL COMMAND</p>
+                <p className="text-[9px] font-bold text-[#94A3B8] mt-1 uppercase">HQ Ops Portal</p>
+              </div>
+            </div>
+            <nav className="flex flex-col gap-2">
+              {[
+                { id: 'dashboard', label: 'Operations', icon: Layers },
+                { id: 'incidents', label: 'Active Incidents', icon: ShieldAlert },
+                { id: 'map', label: 'Resource Map', icon: MapIcon },
+                { id: 'units', label: 'Responders', icon: Users },
+                { id: 'logs', label: 'System Logs', icon: Activity },
+                { id: 'settings', label: 'Settings', icon: Settings },
+              ].map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => { setView('admin'); setSubView(item.id as AdminSubView); onMobileClose(); }}
+                  className={cn(
+                    "flex items-center gap-4 py-3 px-4 rounded-xl text-left font-bold text-xs uppercase tracking-wider transition-all",
+                    currentSubView === item.id ? "bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#3B82F6]" : "text-[#CBD5E1] hover:bg-white/5"
+                  )}
+                >
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </nav>
+          </div>
+          <button onClick={async () => { await logoutUser(); setView('pitch'); onMobileClose(); }} className="flex items-center gap-4 py-3 px-4 text-[#94A3B8] hover:text-[#EF4444] font-bold text-xs uppercase tracking-wider mt-auto border-t border-white/5 pt-4">
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out</span>
+          </button>
         </div>
       </div>
     )}
   </>
 );
 
-const TopBar = ({ title, view, setView, onMenuOpen }: { title: string, view: View, setView: (v: View) => void, onMenuOpen?: () => void }) => (
-  <header className={cn(
-    "fixed top-0 right-0 h-16 z-40 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/10 flex items-center justify-between px-4 md:px-8 transition-all",
-    view === 'pitch' ? "left-0" : "left-0 md:left-72"
-  )}>
-    <div className="flex items-center gap-3">
-      {/* Mobile hamburger — shown only in non-pitch views */}
-      {view !== 'pitch' && (
-        <button onClick={onMenuOpen} className="md:hidden p-2 rounded-lg text-on-surface-variant hover:bg-slate-100 transition-all">
-          <Menu className="w-5 h-5" />
-        </button>
-      )}
-      <span className="text-sm md:text-lg font-bold text-on-surface uppercase tracking-widest font-body truncate max-w-[160px] md:max-w-none">{title}</span>
-    </div>
+const TopBar = ({ view, setView, activeCrisis, onMenuOpen }: {
+  view: View,
+  setView: (v: View) => void,
+  activeCrisis?: CrisisEvent,
+  onMenuOpen?: () => void
+}) => {
+  const [time, setTime] = useState(new Date());
 
-    <div className="flex items-center gap-2 md:gap-4">
-      {/* Mobile view switcher pills */}
-      <div className="flex md:hidden items-center gap-1">
-        <button onClick={() => setView('pitch')} className={cn("px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all", view === 'pitch' ? 'bg-secondary text-white' : 'text-slate-400')}>
-          Pitch
-        </button>
-        <button onClick={() => setView('admin')} className={cn("px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all", view === 'admin' ? 'bg-secondary text-white' : 'text-slate-400')}>
-          Ops
-        </button>
-        <button onClick={() => setView('simulation')} className={cn("px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all", view === 'simulation' ? 'bg-error text-white' : 'text-slate-400')}>
-          Demo
-        </button>
-        <button onClick={() => setView('guide')} className={cn("px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all", view === 'guide' ? 'bg-slate-900 text-white' : 'text-slate-400')}>
-          Guest
-        </button>
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const hasAlert = !!activeCrisis;
+
+  return (
+    <header className={cn(
+      "fixed top-0 right-0 h-16 z-40 bg-[#111827] border-b border-white/10 flex items-center justify-between px-6 transition-all",
+      view === 'pitch' ? "left-0" : "left-0 md:left-[72px]"
+    )}>
+      <div className="flex items-center gap-4">
+        {view !== 'pitch' && (
+          <button onClick={onMenuOpen} className="md:hidden p-2 rounded-lg text-[#CBD5E1] hover:bg-white/5 transition-all">
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+        <div className="flex flex-col">
+          <span className="text-xs font-black text-[#F8FAFC] uppercase tracking-widest leading-none">SENTINEL OPERATIONS CENTER</span>
+          <span className="text-[9px] font-bold text-[#94A3B8] uppercase tracking-wider mt-1">FACILITY COMMAND HQ</span>
+        </div>
+
+        {/* Flashing alert indicator */}
+        {hasAlert && (
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-[#EF4444]/15 border border-[#EF4444]/30 rounded-lg text-[#EF4444] text-[9px] font-black uppercase tracking-widest animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#EF4444]" />
+            ACTIVE CRISIS PROTOCOL ENGAGED
+          </div>
+        )}
       </div>
 
-      {/* Desktop nav */}
-      <nav className="hidden md:flex items-center gap-6 mr-6 border-r border-outline-variant/20 pr-6">
-        <button onClick={() => setView('pitch')} className={cn("text-xs font-bold uppercase tracking-widest transition-all", view === 'pitch' ? 'text-secondary' : 'text-slate-500 hover:text-on-surface')}>Visual Pitch</button>
-        <button onClick={() => setView('admin')} className={cn("text-xs font-bold uppercase tracking-widest transition-all", view === 'admin' ? 'text-secondary' : 'text-slate-500 hover:text-on-surface')}>Operations</button>
-        <button onClick={() => setView('simulation')} className={cn("text-xs font-bold uppercase tracking-widest transition-all px-4 py-1.5 rounded-full border", view === 'simulation' ? 'border-error text-error bg-error/10' : 'border-transparent text-slate-500 hover:text-on-surface')}>
-          <div className={cn("inline-block w-2 h-2 rounded-full mr-2", view === 'simulation' ? 'bg-error animate-pulse' : 'bg-slate-400')} />Live Demo
-        </button>
-      </nav>
+      <div className="flex items-center gap-6">
+        {/* Global Search */}
+        <div className="hidden lg:flex items-center gap-2 bg-[#0B1020] border border-white/10 px-4 py-2 rounded-xl text-xs text-[#94A3B8] w-64 focus-within:border-[#3B82F6]/50 transition-all">
+          <Search className="w-4 h-4 text-[#94A3B8]" />
+          <input type="text" placeholder="Search rooms, staff, assets..." className="bg-transparent border-none outline-none text-[#F8FAFC] w-full placeholder-[#94A3B8]/60" />
+        </div>
 
-      {view !== 'pitch' && (
-        <div className="hidden md:flex items-center gap-4">
-          <button className="p-2 text-on-surface-variant hover:bg-slate-100 rounded-full transition-all"><Bell className="w-5 h-5" /></button>
-          <div className="w-8 h-8 rounded-full bg-slate-300 overflow-hidden border border-outline-variant/30">
-            <img src="https://picsum.photos/seed/admin/100/100" alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+        {/* Live ticking clock */}
+        <div className="hidden sm:flex flex-col items-end font-mono">
+          <span className="text-xs font-bold text-[#F8FAFC] leading-none">
+            {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+          </span>
+          <span className="text-[9px] font-bold text-[#94A3B8] uppercase tracking-widest mt-1">
+            {time.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+          </span>
+        </div>
+
+        {/* User Profile */}
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex flex-col items-end">
+            <span className="text-xs font-bold text-[#F8FAFC] leading-none">Duty Commander</span>
+            <span className="text-[9px] font-bold text-[#22C55E] uppercase tracking-widest mt-1">Online</span>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+            <img src="https://picsum.photos/seed/admin/100/100" alt="Commander Profile" className="w-full h-full object-cover" />
           </div>
         </div>
-      )}
-    </div>
-  </header>
-);
+      </div>
+    </header>
+  );
+};
+
 
 // --- Content Components ---
 
@@ -335,6 +395,15 @@ const AdminIncidents = () => {
 const AdminUnits = () => {
   const [units, setUnits] = useState<ResponderUnit[]>([]);
   useEffect(() => { return streamUnits(setUnits); }, []);
+
+  const getStatusBadgeClass = (status: string) => {
+    const s = status.toLowerCase();
+    if (s === 'active') return 'bg-[#FEE2E2] text-[#DC2626]';
+    if (s === 'evacuating') return 'bg-[#FED7AA] text-[#EA580C]';
+    if (s === 'patrol') return 'bg-[#DBEAFE] text-[#2563EB]';
+    return 'bg-[#E2E8F0] text-[#475569]'; // standby / fallback
+  };
+
   return (
     <div className="space-y-10">
       <div>
@@ -342,33 +411,33 @@ const AdminUnits = () => {
         <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.3em]">Managing on-site security and emergency personnel.</p>
       </div>
 
-      <div className="bg-white/70 backdrop-blur-md border border-slate-200/60 rounded-[2.5rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+      <div className="bg-[#B8B9BF] border border-slate-200/60 rounded-[2.5rem] overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 border-b border-slate-100">
+          <thead className="bg-[#FFFFFF] border-b border-[#FFFFFF]">
             <tr>
-              <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Unit ID</th>
-              <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Commander</th>
-              <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Sector</th>
-              <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Status</th>
-              <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">Actions</th>
+              <th className="px-8 py-4 text-[10px] font-semibold uppercase tracking-widest text-[#475569]">Unit ID</th>
+              <th className="px-8 py-4 text-[10px] font-semibold uppercase tracking-widest text-[#475569]">Commander</th>
+              <th className="px-8 py-4 text-[10px] font-semibold uppercase tracking-widest text-[#475569]">Sector</th>
+              <th className="px-8 py-4 text-[10px] font-semibold uppercase tracking-widest text-[#475569]">Status</th>
+              <th className="px-8 py-4 text-[10px] font-semibold uppercase tracking-widest text-[#475569]">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-[#FFFFFF] bg-[#B8B9BF]">
             {units.length === 0 && (
-              <tr><td colSpan={5} className="px-8 py-12 text-center text-[10px] font-black uppercase tracking-widest text-slate-400">No units deployed.</td></tr>
+              <tr><td colSpan={5} className="px-8 py-12 text-center text-[10px] font-semibold uppercase tracking-widest text-[#475569]">No units deployed.</td></tr>
             )}
             {units.map((u) => (
-              <tr key={u.id || u.unitId} className="hover:bg-slate-50/50 transition-all">
-                <td className="px-8 py-6 font-mono text-xs font-bold">{u.unitId}</td>
-                <td className="px-8 py-6 text-sm font-bold">{u.commander}</td>
-                <td className="px-8 py-6 text-sm font-medium text-slate-500">{u.sectorId}</td>
+              <tr key={u.id || u.unitId} className="bg-[#B8B9BF] transition-all">
+                <td className="px-8 py-6 font-mono text-xs font-semibold text-[#334155]">{u.unitId}</td>
+                <td className="px-8 py-6 text-sm font-semibold text-[#1E293B]">{u.commander}</td>
+                <td className="px-8 py-6 text-sm font-medium text-[#475569]">{u.sectorId}</td>
                 <td className="px-8 py-6">
-                  <span className={cn("px-2 py-1 rounded text-[10px] font-black uppercase", u.status === 'active' || u.status === 'evacuating' ? 'bg-error/10 text-error' : 'bg-tertiary-fixed-dim/10 text-on-tertiary-container')}>
+                  <span className={cn("px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase inline-block", getStatusBadgeClass(u.status))}>
                     {u.status}
                   </span>
                 </td>
                 <td className="px-8 py-6">
-                  <button className="text-secondary font-black text-[10px] uppercase tracking-widest">Connect Hub</button>
+                  <button className="text-[#2563EB] hover:text-[#1D4ED8] hover:underline font-semibold text-[10px] uppercase tracking-widest transition-all">Connect Hub</button>
                 </td>
               </tr>
             ))}
@@ -463,7 +532,7 @@ const ResourceInventoryDashboard = () => {
       <div className="p-10 border-b border-slate-100 bg-slate-50/30">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
           <div>
-            <h2 className="text-5xl font-headline font-black italic tracking-tighter uppercase mb-2 pt-2 leading-tight">Resource Inventory Engine</h2>
+            <h2 className="text-5xl font-headline font-black italic tracking-tighter uppercase mb-2 pt-2 leading-tight text-[#0B101F]">Resource Inventory Engine</h2>
             <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.3em]">Facility-Wide Sentinel Tracking</p>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
@@ -641,7 +710,7 @@ const AdminLogs = () => {
               const t = log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString() : 'Just now';
               return (
                 <tr key={log.id || i} className="hover:bg-slate-50/50 transition-all group">
-                  <td className="px-8 py-6 font-mono text-[10px] font-bold text-slate-400">{t}</td>
+                  <td className="px-8 py-6 font-mono text-[10px] font-bold text-[#64748B]">{t}</td>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-3">
                       <div className={cn(
@@ -889,25 +958,25 @@ const NewIncidentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
-        <div className="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-[#111827] border border-white/10 rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden">
+        <div className="p-6 border-b border-white/10 bg-[#172033] flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-error/10 text-error flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-[#EF4444]/15 text-[#EF4444] flex items-center justify-center border border-[#EF4444]/20">
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-headline font-black text-xl uppercase tracking-tight italic">Report Incident</h3>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Initiate Crisis Protocol</p>
+              <h3 className="font-headline font-bold text-lg text-[#F8FAFC] uppercase tracking-wide">Report Incident</h3>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[#94A3B8]">Initiate Crisis Protocol</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-lg transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors"><X className="w-5 h-5 text-[#94A3B8] hover:text-[#F8FAFC]" /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500">Crisis Type</label>
-              <select value={crisisType} onChange={e => setCrisisType(e.target.value as any)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-error/20 outline-none">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Crisis Type</label>
+              <select value={crisisType} onChange={e => setCrisisType(e.target.value as any)} className="w-full p-3 bg-[#0B1020] border border-white/10 rounded-xl font-bold text-sm text-[#F8FAFC] focus:outline-none focus:border-[#3B82F6]/50 [&>option]:bg-[#111827]">
                 <option value="fire">Fire</option>
                 <option value="smoke">Smoke</option>
                 <option value="intrusion">Intrusion</option>
@@ -915,8 +984,8 @@ const NewIncidentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500">Severity</label>
-              <select value={severity} onChange={e => setSeverity(e.target.value as any)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-error/20 outline-none">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Severity</label>
+              <select value={severity} onChange={e => setSeverity(e.target.value as any)} className="w-full p-3 bg-[#0B1020] border border-white/10 rounded-xl font-bold text-sm text-[#F8FAFC] focus:outline-none focus:border-[#3B82F6]/50 [&>option]:bg-[#111827]">
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
@@ -926,21 +995,21 @@ const NewIncidentModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500">Floor Number</label>
-              <input type="number" value={floor} onChange={e => setFloor(parseInt(e.target.value))} required min="1" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-error/20 outline-none" />
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Floor Number</label>
+              <input type="number" value={floor} onChange={e => setFloor(parseInt(e.target.value))} required min="1" className="w-full p-3 bg-[#0B1020] border border-white/10 rounded-xl font-bold text-sm text-[#F8FAFC] focus:outline-none focus:border-[#3B82F6]/50" />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500">Room / Zone</label>
-              <input type="text" value={roomNumber} onChange={e => setRoomNumber(e.target.value)} required placeholder="e.g. 412" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-error/20 outline-none" />
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Room / Zone</label>
+              <input type="text" value={roomNumber} onChange={e => setRoomNumber(e.target.value)} required placeholder="e.g. 412" className="w-full p-3 bg-[#0B1020] border border-white/10 rounded-xl font-bold text-sm text-[#F8FAFC] focus:outline-none focus:border-[#3B82F6]/50 placeholder-[#94A3B8]/30" />
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500">Incident Details</label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={3} placeholder="Describe the situation..." className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm focus:ring-2 focus:ring-error/20 outline-none resize-none" />
+            <label className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Incident Details</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} required rows={3} placeholder="Describe the situation..." className="w-full p-3 bg-[#0B1020] border border-white/10 rounded-xl font-bold text-sm text-[#F8FAFC] focus:outline-none focus:border-[#3B82F6]/50 resize-none placeholder-[#94A3B8]/30" />
           </div>
           <div className="pt-4 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-6 py-3 font-black text-sm uppercase tracking-widest text-slate-500 hover:bg-slate-100 rounded-xl transition-colors">Cancel</button>
-            <button type="submit" disabled={isSubmitting} className="px-6 py-3 bg-[#c62828] text-white font-black text-sm uppercase tracking-widest rounded-xl hover:bg-red-800 transition-colors shadow-lg shadow-red-500/30 disabled:opacity-50">
+            <button type="button" onClick={onClose} className="px-6 py-3 font-bold text-xs uppercase tracking-widest text-[#CBD5E1] hover:bg-white/5 rounded-xl transition-all">Cancel</button>
+            <button type="submit" disabled={isSubmitting} className="px-6 py-3 bg-[#EF4444] text-white font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30 disabled:opacity-50">
               {isSubmitting ? 'Transmitting...' : 'Trigger Alert'}
             </button>
           </div>
@@ -954,156 +1023,186 @@ const AdminDashboard = ({ rooms, isCompact = false, setSubView }: { rooms: RoomS
   const [logs, setLogs] = useState<OperationalLog[]>(generateMockLogs());
   const [crises, setCrises] = useState<CrisisEvent[]>([]);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
+  const [responders, setResponders] = useState<ResponderUnit[]>([]);
 
   useEffect(() => {
     const unsubLogs = streamLogs((dbLogs) => {
       const validLogs = dbLogs.filter(log => log && log.event);
-      setLogs(validLogs.length > 0 ? validLogs.slice(0, 15) : generateMockLogs());
+      setLogs(validLogs.length > 0 ? validLogs.slice(0, 20) : generateMockLogs());
     });
     const unsubCrises = streamCrises(setCrises);
-    return () => { unsubLogs(); unsubCrises(); };
+    const unsubResponders = streamUnits(setResponders);
+    return () => { unsubLogs(); unsubCrises(); unsubResponders(); };
   }, []);
 
   const activeAlerts = crises.filter(c => c.status === 'active').length;
+  const safeRooms = rooms.filter(r => r.occupancyStatus === 'evacuated').length;
+  const totalOccupants = rooms.filter(r => r.occupancyStatus === 'occupied').length * 4;
 
   return (
-    <div className={cn("flex flex-col gap-8", isCompact ? "space-y-0 gap-6" : "space-y-0")}>
+    <div className={cn("flex flex-col gap-6 w-full", isCompact ? "gap-4" : "gap-6")}>
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col">
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2 py-0.5 bg-slate-900 text-white text-[10px] font-bold uppercase rounded">Operational</span>
-            {!isCompact && <span className="text-on-surface-variant text-[11px] font-medium">100% Core Services Active</span>}
+            <span className="px-2 py-0.5 bg-[#EF4444]/15 border border-[#EF4444]/20 text-[#EF4444] text-[9px] font-bold uppercase rounded">HQ ACTIVE</span>
+            {!isCompact && <span className="text-[#94A3B8] text-[10px] font-bold tracking-wider uppercase">Vigilant Watch Monitor</span>}
           </div>
-          <h2 className={cn("font-headline font-black tracking-tight text-on-surface uppercase italic leading-none", isCompact ? "text-3xl" : "text-5xl")}>Real-Time Operations</h2>
+          <h2 className={cn("font-sans font-black tracking-tight text-[#F8FAFC] uppercase", isCompact ? "text-2xl" : "text-4xl")}>Operational Command</h2>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowIncidentModal(true)} className="flex items-center gap-2 bg-[#c62828] hover:bg-red-800 transition-colors text-white px-5 py-2.5 rounded-xl shadow-lg shadow-red-500/30 active:scale-95 group">
-            <div className="p-1 bg-white/20 rounded-md group-hover:bg-white/30 transition-colors"><Plus className="w-4 h-4" /></div>
+          <button onClick={() => setShowIncidentModal(true)} className="flex items-center gap-2 bg-[#EF4444] hover:bg-red-600 transition-colors text-white px-5 py-2.5 rounded-xl shadow-lg active:scale-95 group cursor-pointer">
+            <div className="p-0.5 bg-white/20 rounded-md group-hover:bg-white/30 transition-colors"><Plus className="w-4 h-4" /></div>
             <span className="text-[10px] font-black uppercase tracking-widest">New Incident</span>
           </button>
-          <div className="hidden sm:flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-lg text-[10px] font-label font-medium text-slate-700 shadow-sm">
-            <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-          </div>
         </div>
       </div>
 
-      {/* Metric Grid */}
+      {/* Main Grid: Map on Left, Timeline on Right */}
       <div className="grid grid-cols-12 gap-6">
-        <div className={cn("col-span-12 space-y-6", isCompact ? "lg:col-span-12" : "lg:col-span-8")}>
-          <div className={cn("grid grid-cols-1 sm:grid-cols-3 gap-6", isCompact && "sm:grid-cols-3")}>
-            <div className="bg-blue-50/50 border border-blue-100/50 border-l-4 border-l-blue-500/70 rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.01)] flex flex-col gap-3">
-              <div className="flex justify-between items-start">
-                <span className="text-slate-500 font-label text-[10px] font-black uppercase tracking-[0.2em]">Guests</span>
-                <Users className="w-4 h-4 text-slate-400" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className={cn("font-headline font-black text-slate-900", isCompact ? "text-3xl" : "text-5xl")}>1,248</span>
-                <span className="text-[10px] font-bold text-emerald-600">+12%</span>
-              </div>
-            </div>
-            <div className="bg-emerald-50/50 border border-emerald-100/50 border-l-4 border-l-emerald-500/70 rounded-[2rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.01)] flex flex-col gap-3">
-              <div className="flex justify-between items-start">
-                <span className="text-slate-500 font-label text-[10px] font-black uppercase tracking-[0.2em]">In-Zone Status</span>
-                <CheckCircle className="w-4 h-4 text-emerald-500" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className={cn("font-headline font-black text-slate-900", isCompact ? "text-3xl" : "text-5xl")}>98.2<span className="text-xl">%</span></span>
-              </div>
-            </div>
-            <div className={cn(
-              "rounded-[2rem] p-6 transition-all flex flex-col gap-3",
-              activeAlerts > 0
-                ? "bg-[#0b1c30] text-white shadow-2xl border-l-8 border-error"
-                : "bg-slate-50/50 border border-slate-200/50 border-l-4 border-l-slate-400/50 text-slate-900 shadow-[0_8px_30px_rgba(0,0,0,0.01)]"
-            )}>
-              <div className="flex justify-between items-start">
-                <span className={cn("font-label text-[10px] font-black uppercase tracking-[0.2em]", activeAlerts > 0 ? "text-secondary/80" : "text-slate-500")}>Pending Alerts</span>
-                <AlertTriangle className={cn("w-4 h-4", activeAlerts > 0 ? "text-error animate-pulse" : "text-slate-400")} />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className={cn("font-headline font-black", activeAlerts > 0 ? "text-white" : "text-slate-900", isCompact ? "text-3xl" : "text-5xl")}>
-                  {activeAlerts.toString().padStart(2, '0')}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Panel or Map */}
-          <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-sm flex flex-col h-[400px] relative">
-            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <div className={cn("col-span-12", isCompact ? "lg:col-span-12" : "lg:col-span-8")}>
+          {/* Facility Monitor Card */}
+          <div className="bg-[#111827] border border-white/10 rounded-[2rem] overflow-hidden flex flex-col h-[520px] relative shadow-xl">
+            <div className="px-6 py-4 border-b border-white/10 bg-[#172033] flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-900 italic">Facility Monitor</span>
+                <span className="text-xs font-black uppercase tracking-[0.2em] text-[#F8FAFC]">Live Facility Monitor</span>
                 <div className="flex gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                  <div className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-white/10" />
                 </div>
               </div>
+              <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-widest">Building Layout Map</span>
             </div>
-            <div className="flex-1 relative bg-slate-50 overflow-hidden">
+            <div className="flex-grow relative bg-[#0B1020] overflow-hidden">
               <MockMap rooms={rooms} crises={crises} className="h-full border-none rounded-none" />
             </div>
           </div>
         </div>
 
-        {/* Sidebar Activity (Hidden if compact on extra small but visible here) */}
+        {/* Incident Timeline / Activity Feed */}
         {!isCompact && (
-          <div className="col-span-12 lg:col-span-4 space-y-8">
-            <div className="bg-white/80 backdrop-blur-md border border-slate-200/60 rounded-[2.5rem] shadow-[0_8px_30px_rgba(0,0,0,0.02)] flex flex-col h-[500px] overflow-hidden">
-              <div className="p-6 border-b border-slate-100 bg-blue-50/30 backdrop-blur-sm flex justify-between items-center">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">System Activity</h3>
+          <div className="col-span-12 lg:col-span-4">
+            <div className="bg-[#111827] border border-white/10 rounded-[2rem] flex flex-col h-[520px] overflow-hidden shadow-xl">
+              <div className="px-6 py-4 border-b border-white/10 bg-[#172033] flex justify-between items-center">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-[#F8FAFC]">Incident Timeline</h3>
                 <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-bold text-on-surface uppercase tracking-widest">Live Feed</span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#EF4444] animate-ping" />
+                  <span className="text-[9px] font-bold text-[#EF4444] uppercase tracking-widest">Live Feed</span>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
-                {logs.length === 0 && <div className="p-8 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">No logs found.</div>}
-                {logs.slice(0, 5).map((log, i) => {
-                  const t = log.timestamp?.toDate ? log.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Just now';
-                  let Icon = Activity;
-                  if (log.category === 'security') Icon = Shield;
-                  if (log.category === 'hardware') Icon = Settings;
+              <div className="flex-grow overflow-y-auto custom-scrollbar p-4 space-y-3 bg-[#0B1020]/40">
+                {/* Active crises shown first */}
+                {crises.filter(c => c.status === 'active').map((c, i) => (
+                  <div key={`crisis-${i}`} className="flex flex-col gap-2 p-4 rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/5 relative overflow-hidden animate-pulse">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] font-mono text-[#F8FAFC] font-bold">JUST NOW</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border border-[#EF4444]/40 bg-[#EF4444]/15 text-[#EF4444]">CRITICAL</span>
+                    </div>
+                    <h4 className="text-xs font-black text-[#F8FAFC] uppercase tracking-wide">ACTIVE {c.crisisType} ALERT</h4>
+                    <p className="text-[11px] text-[#CBD5E1] font-bold">{c.description || 'Crisis protocol initiated.'}</p>
+                    <div className="flex justify-between items-center text-[9px] font-bold text-[#94A3B8] uppercase mt-1">
+                      <span>Loc: Room {c.roomNumber} (Floor {c.floor})</span>
+                      <span className="text-[#EF4444]">Status: ACTIVE</span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Log events */}
+                {logs.length === 0 && crises.length === 0 && (
+                  <div className="p-8 text-center text-[#94A3B8] font-bold uppercase tracking-widest text-xs">No active logs.</div>
+                )}
+
+                {logs.map((log, i) => {
+                  const t = log.timestamp?.toDate ? log.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) : 'Just now';
+                  const isWarning = log.status === 'warning';
+                  const isSuccess = log.status === 'success';
+                  const severityText = isWarning ? 'Warning' : isSuccess ? 'Normal' : 'Critical';
 
                   return (
                     <div
-                      key={i}
-                      className={cn(
-                        "flex gap-4 p-4 transition-all rounded-[1.5rem] group cursor-pointer border border-transparent",
-                        log.status === 'warning' ? "hover:bg-secondary/5 hover:border-secondary/15" :
-                          log.status === 'success' ? "hover:bg-emerald-500/5 hover:border-emerald-500/15" :
-                            "hover:bg-blue-500/5 hover:border-blue-500/15"
-                      )}
+                      key={`log-${i}`}
+                      className="flex flex-col gap-2 p-4 rounded-xl border border-white/5 bg-[#172033]/40 hover:bg-[#172033]/80 transition-colors"
                     >
-                      <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center transition-all group-hover:scale-110 shrink-0",
-                        log.status === 'warning' ? "bg-secondary/10 text-secondary group-hover:bg-secondary/20" :
-                          log.status === 'success' ? "bg-emerald-500/10 text-emerald-600 group-hover:bg-emerald-500/20" :
-                            "bg-blue-500/10 text-blue-600 group-hover:bg-blue-500/20"
-                      )}>
-                        <Icon className="w-5 h-5" />
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-mono text-[#CBD5E1] font-bold">{t}</span>
+                        <span className={cn(
+                          "text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border",
+                          isWarning ? 'bg-[#F59E0B]/10 border-[#F59E0B]/20 text-[#F59E0B]' :
+                            isSuccess ? 'bg-[#22C55E]/10 border-[#22C55E]/20 text-[#22C55E]' :
+                              'bg-[#EF4444]/10 border-[#EF4444]/20 text-[#EF4444]'
+                        )}>
+                          {severityText}
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start gap-2">
-                          <h4 className="text-sm font-bold text-on-surface truncate group-hover:text-slate-900 transition-colors">{log.event}</h4>
-                          <span className="font-mono text-[9px] text-slate-400 font-bold shrink-0">{t}</span>
-                        </div>
-                        <p className="text-[11px] font-medium text-slate-500 mt-0.5 truncate">{log.source}</p>
+                      <h4 className="text-xs font-bold text-[#F8FAFC]">{log.event}</h4>
+                      <div className="flex justify-between items-center text-[9px] font-bold text-[#94A3B8] uppercase mt-1">
+                        <span>Loc: {log.source}</span>
+                        <span>Cat: {log.category}</span>
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
               <button
                 onClick={() => setSubView?.('logs')}
-                className="p-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-slate-900 border-t border-slate-100 bg-slate-50/30 hover:bg-blue-50/40 transition-all cursor-pointer font-headline"
+                className="p-4 text-[10px] font-black uppercase tracking-widest text-[#CBD5E1] hover:text-[#F8FAFC] border-t border-white/10 bg-[#172033] hover:bg-[#111827] transition-all cursor-pointer text-center"
               >
-                Access Transaction Logs
+                Access System Logs
               </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Bottom Status Strip */}
+      <div className="w-full bg-[#111827] border border-white/10 p-4 rounded-2xl flex flex-wrap justify-between gap-6 items-center shadow-lg">
+        <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#22C55E]/15 border border-[#22C55E]/20 flex items-center justify-center text-[#22C55E]"><Users className="w-4 h-4" /></div>
+            <div>
+              <p className="text-[9px] font-bold text-[#94A3B8] uppercase leading-none">Safe Occupants</p>
+              <p className="text-sm font-black text-[#F8FAFC] mt-1">{safeRooms * 4 || totalOccupants || 1214}</p>
+            </div>
+          </div>
+
+          <div className="w-px h-8 bg-white/10" />
+
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/15 border border-[#3B82F6]/20 flex items-center justify-center text-[#3B82F6]"><Navigation className="w-4 h-4" /></div>
+            <div>
+              <p className="text-[9px] font-bold text-[#94A3B8] uppercase leading-none">Evacuated</p>
+              <p className="text-sm font-black text-[#F8FAFC] mt-1">{(crises.length > 0 ? 34 : 0).toLocaleString()}</p>
+            </div>
+          </div>
+
+          <div className="w-px h-8 bg-white/10" />
+
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#EF4444]/15 border border-[#EF4444]/20 flex items-center justify-center text-[#EF4444]"><AlertCircle className="w-4 h-4" /></div>
+            <div>
+              <p className="text-[9px] font-bold text-[#94A3B8] uppercase leading-none">Active Alerts</p>
+              <p className="text-sm font-black text-[#F8FAFC] mt-1">{activeAlerts}</p>
+            </div>
+          </div>
+
+          <div className="w-px h-8 bg-white/10" />
+
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#3B82F6]/15 border border-[#3B82F6]/20 flex items-center justify-center text-[#3B82F6]"><Users className="w-4 h-4" /></div>
+            <div>
+              <p className="text-[9px] font-bold text-[#94A3B8] uppercase leading-none">Responders Deployed</p>
+              <p className="text-sm font-black text-[#F8FAFC] mt-1">{responders.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 bg-[#0B1020] px-4 py-2 border border-white/10 rounded-xl">
+          <span className="w-2 h-2 rounded-full bg-[#F59E0B] animate-pulse" />
+          <span className="text-[9px] font-bold text-[#CBD5E1] uppercase">Est. Resolution Time:</span>
+          <span className="text-xs font-black text-[#F8FAFC] font-mono">{activeAlerts > 0 ? "14m 20s" : "0m"}</span>
+        </div>
+      </div>
+
       <NewIncidentModal isOpen={showIncidentModal} onClose={() => setShowIncidentModal(false)} />
     </div>
   );
@@ -1264,165 +1363,185 @@ const VisualPitch = ({ onComplete }: { onComplete: () => void; key?: string }) =
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-12 relative overflow-hidden">
+    <div className="flex-1 flex flex-col items-center justify-start p-4 md:p-8 relative overflow-hidden bg-[#0B1020]">
       {/* Immersive background decoration */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[radial-gradient(circle_at_center,_rgba(0,212,255,0.1)_0%,_transparent_70%)] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-[radial-gradient(circle_at_center,_rgba(59,130,246,0.06)_0%,_transparent_70%)] pointer-events-none" />
 
-      <AnimatePresence mode="wait">
-        {(scene === 'problem' || scene === 'activation') && (
-          <motion.div
-            key="floorplan" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }}
-            className="w-full max-w-5xl flex flex-col gap-12"
-          >
-            <div className="aspect-video rounded-[3rem] bg-slate-100 border border-slate-200 shadow-2xl overflow-hidden relative group">
-              <img src="https://picsum.photos/seed/evacuation/1200/800?grayscale" className="w-full h-full object-cover opacity-10 mix-blend-multiply" referrerPolicy="no-referrer" />
+      {/* Enter Live Demo Button */}
+      <div className="mb-6 z-20 flex justify-center">
+        <button
+          onClick={onComplete}
+          className="px-8 py-3.5 bg-white text-black hover:bg-slate-100 rounded-[1.5rem] font-headline font-black text-xs uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+        >
+          <Zap className="w-4 h-4 fill-current text-amber-500 animate-pulse" />
+          Enter Live Demo
+        </button>
+      </div>
 
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative w-2/3 h-2/3">
-                  {/* Grid Lines */}
-                  <div className="absolute inset-0 grid grid-cols-12 grid-rows-12 opacity-[0.05] pointer-events-none">
-                    {Array.from({ length: 144 }).map((_, i) => <div key={i} className="border border-slate-900" />)}
+      {/* Tactical Monitor Panel Frame */}
+      <div className="w-full max-w-6xl border border-white/10 rounded-[2rem] bg-[#111827] p-8 md:p-12 shadow-2xl relative">
+        <div className="absolute top-4 left-6 flex items-center gap-2 text-[8px] font-bold text-[#94A3B8] uppercase tracking-widest">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-pulse" />
+          Command Feed // Presentation Node
+        </div>
+        <div className="absolute top-4 right-6 text-[8px] font-mono text-[#94A3B8] uppercase">
+          Feed: SEC_PITCH_STATION
+        </div>
+
+        <div className="pt-4">
+          <AnimatePresence mode="wait">
+            {(scene === 'problem' || scene === 'activation') && (
+              <motion.div
+                key="floorplan" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }}
+                className="w-full flex flex-col gap-12"
+              >
+                <div className="aspect-video rounded-[3rem] bg-slate-100 border border-slate-200 shadow-2xl overflow-hidden relative group">
+                  <img src="https://picsum.photos/seed/evacuation/1200/800?grayscale" className="w-full h-full object-cover opacity-10 mix-blend-multiply" referrerPolicy="no-referrer" />
+
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="relative w-2/3 h-2/3">
+                      {/* Grid Lines */}
+                      <div className="absolute inset-0 grid grid-cols-12 grid-rows-12 opacity-[0.05] pointer-events-none">
+                        {Array.from({ length: 144 }).map((_, i) => <div key={i} className="border border-slate-900" />)}
+                      </div>
+
+                      {/* Room Nodes */}
+                      <motion.div
+                        layoutId="node-412"
+                        initial={{ scale: 1 }}
+                        animate={scene === 'problem' ? { scale: [1, 1.2, 1], opacity: [0.3, 1, 0.3] } : {}}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        className={cn(
+                          "absolute top-1/3 left-1/2 w-32 h-20 rounded-xl flex items-center justify-center font-black text-xl italic transition-colors shadow-2xl",
+                          scene === 'problem' ? "bg-error text-white" : "bg-emerald-500 text-white"
+                        )}
+                      >
+                        412
+                      </motion.div>
+                    </div>
                   </div>
 
-                  {/* Room Nodes */}
-                  <motion.div
-                    layoutId="node-412"
-                    initial={{ scale: 1 }}
-                    animate={scene === 'problem' ? { scale: [1, 1.2, 1], opacity: [0.3, 1, 0.3] } : {}}
-                    transition={{ repeat: Infinity, duration: 2 }}
-                    className={cn(
-                      "absolute top-1/3 left-1/2 w-32 h-20 rounded-xl flex items-center justify-center font-black text-xl italic transition-colors shadow-2xl",
-                      scene === 'problem' ? "bg-error text-white" : "bg-emerald-500 text-white"
-                    )}
-                  >
-                    412
-                  </motion.div>
+                  <div className="absolute top-12 left-12">
+                    <div className="inline-flex items-center gap-3 px-6 py-2 bg-slate-900 text-white rounded-full font-black text-xs uppercase tracking-[0.3em] shadow-2xl">
+                      {scene === 'problem' ? "CRITICAL ALERT DETECTED" : "NEXUS RESPONSE ACTIVE"}
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="absolute top-12 left-12">
-                <div className="inline-flex items-center gap-3 px-6 py-2 bg-slate-900 text-white rounded-full font-black text-xs uppercase tracking-[0.3em] shadow-2xl">
-                  {scene === 'problem' ? "CRITICAL ALERT DETECTED" : "NEXUS RESPONSE ACTIVE"}
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center max-w-2xl mx-auto space-y-4 px-4">
-              <h2 className="text-3xl md:text-6xl font-headline font-black tracking-tighter text-on-surface italic uppercase">
-                {scene === 'problem' ? "Chaos by Design." : "Intelligent Safety."}
-              </h2>
-              <p className="text-base md:text-xl text-on-surface-variant font-medium leading-relaxed">
-                {scene === 'problem'
-                  ? "Standard systems offer noise, not directions. Seconds cost lives."
-                  : "A neural safety mesh powered by Google Cloud Platform, guiding every guest individually."}
-              </p>
-            </div>
-          </motion.div>
-        )}
-
-        {scene === 'pillars' && (
-          <motion.div
-            key="pillars" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }}
-            className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
-          >
-            {[
-              { t: 'Smart Detection', d: 'Cloud Pub/Sub ingests thousands of sensor events per second.', i: Eye, c: 'text-secondary bg-secondary/10' },
-              { t: 'Contextual Alerting', d: 'Room-specific messaging via FCM replaces generic sirens.', i: Bell, c: 'text-amber-600 bg-amber-100' },
-              { t: 'Adaptive Wayfinding', d: 'Vertex AI recalculates optimal paths as hazards shift.', i: Navigation, c: 'text-blue-600 bg-blue-100' },
-              { t: 'Rescue Intelligence', d: 'Real-time responder HUD with room-level occupancy.', i: Users, c: 'text-emerald-700 bg-emerald-100' },
-            ].map((p, i) => (
-              <motion.div
-                key={p.t} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                className="p-10 rounded-[2.5rem] bg-white shadow-xl flex flex-col gap-6 group hover:scale-[1.02] transition-transform cursor-default"
-              >
-                <div className={cn("w-16 h-16 rounded-[1.5rem] flex items-center justify-center", p.c)}>
-                  <p.i className="w-8 h-8" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-headline font-black text-on-surface tracking-tight leading-tight">{p.t}</h3>
-                  <p className="text-sm text-on-surface-variant font-medium leading-relaxed">{p.d}</p>
-                </div>
-                <div className="mt-auto pt-6 border-t border-slate-50 flex justify-end">
-                  <div className="w-8 h-1 bg-slate-200 rounded-full group-hover:bg-secondary group-hover:w-full transition-all duration-500" />
+                <div className="text-center max-w-2xl mx-auto space-y-4 px-4">
+                  <h2 className="text-3xl md:text-6xl font-headline font-black tracking-tighter text-white italic uppercase">
+                    {scene === 'problem' ? "Chaos by Design." : "Intelligent Safety."}
+                  </h2>
+                  <p className="text-base md:text-xl text-[#CBD5E1] font-medium leading-relaxed">
+                    {scene === 'problem'
+                      ? "Standard systems offer noise, not directions. Seconds cost lives."
+                      : "A neural safety mesh powered by Google Cloud Platform, guiding every guest individually."}
+                  </p>
                 </div>
               </motion.div>
-            ))}
-          </motion.div>
-        )}
+            )}
 
-        {scene === 'outcome' && (
-          <motion.div
-            key="outcome" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.1, opacity: 0 }}
-            className="w-full max-w-6xl flex flex-col gap-16"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-              <div className="space-y-6">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Traditional System</span>
-                <div className="aspect-[16/10] rounded-[3rem] bg-slate-900 overflow-hidden relative group">
-                  <img src="https://picsum.photos/seed/legacy/1200/800?grayscale" className="w-full h-full object-cover opacity-30" referrerPolicy="no-referrer" />
-                  <div className="absolute inset-0 flex items-center justify-center text-error font-headline font-black text-4xl italic uppercase tracking-[0.2em] -rotate-12 border-4 border-error/30 m-12 rounded-[2rem]">Static Noise</div>
-                </div>
-                <p className="text-lg font-bold text-on-surface-variant italic">"Everyone runs. Nobody knows why."</p>
-              </div>
-              <div className="space-y-6">
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary">NexusResponse</span>
-                <div className="aspect-[16/10] rounded-[3rem] bg-secondary-container overflow-hidden relative shadow-2xl group">
-                  <img src="https://picsum.photos/seed/future/1200/800" className="w-full h-full object-cover opacity-40 mix-blend-overlay" referrerPolicy="no-referrer" />
-                  <div className="absolute inset-0 flex items-center justify-center text-white font-headline font-black text-4xl italic uppercase tracking-[0.2em] -rotate-6">Precision Ops</div>
-                </div>
-                <p className="text-lg font-bold text-on-surface font-headline italic">"Every second is accounted for. Optimized for life."</p>
-              </div>
-            </div>
+            {scene === 'pillars' && (
+              <motion.div
+                key="pillars" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }}
+                className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
+              >
+                {[
+                  { t: 'Smart Detection', d: 'Cloud Pub/Sub ingests thousands of sensor events per second.', i: Eye, c: 'text-secondary bg-secondary/10' },
+                  { t: 'Contextual Alerting', d: 'Room-specific messaging via FCM replaces generic sirens.', i: Bell, c: 'text-amber-600 bg-amber-100' },
+                  { t: 'Adaptive Wayfinding', d: 'Vertex AI recalculates optimal paths as hazards shift.', i: Navigation, c: 'text-blue-600 bg-blue-100' },
+                  { t: 'Rescue Intelligence', d: 'Real-time responder HUD with room-level occupancy.', i: Users, c: 'text-emerald-700 bg-emerald-100' },
+                ].map((p, i) => (
+                  <motion.div
+                    key={p.t} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                    className="p-10 rounded-[2.5rem] bg-white shadow-xl flex flex-col gap-6 group hover:scale-[1.02] transition-transform cursor-default"
+                  >
+                    <div className={cn("w-16 h-16 rounded-[1.5rem] flex items-center justify-center", p.c)}>
+                      <p.i className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-xl font-headline font-black text-slate-950 tracking-tight leading-tight">{p.t}</h3>
+                      <p className="text-sm text-slate-600 font-medium leading-relaxed">{p.d}</p>
+                    </div>
+                    <div className="mt-auto pt-6 border-t border-slate-50 flex justify-end">
+                      <div className="w-8 h-1 bg-slate-200 rounded-full group-hover:bg-secondary group-hover:w-full transition-all duration-500" />
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 text-center pb-20">
-              {[{ v: '50%', l: 'Reduction in Search Time' }, { v: '100Ms', l: 'Event Processing Latency' }, { v: 'ENTERPRISE', l: 'Built for Scale' }].map(s => (
-                <div key={s.l} className="space-y-1">
-                  <p className="text-6xl font-headline font-black text-on-surface italic tracking-tighter">{s.v}</p>
-                  <p className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary">{s.l}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {scene === 'gcp' && (
-          <motion.div
-            key="gcp" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="w-full max-w-4xl flex flex-col items-center gap-16 text-center"
-          >
-            <div className="space-y-6">
-              <h2 className="text-4xl md:text-7xl font-headline font-black tracking-tight text-on-surface">Built on <span className="text-secondary italic">Google Cloud.</span></h2>
-              <p className="text-base md:text-xl text-on-surface-variant font-medium max-w-2xl mx-auto">Scales from 20 rooms to 2,000. Enterprise-grade security meets real-time AI logic at the edge.</p>
-            </div>
-
-            <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-8">
-              {[
-                { n: 'Pub/Sub', i: Activity, l: 'Event Bus' },
-                { n: 'Vertex AI', i: Cpu, l: 'Logic Engine' },
-                { n: 'Firebase', i: Zap, l: 'Realtime Data' },
-                { n: 'Maps JS', i: MapIcon, l: 'Spatial Viz' },
-              ].map((svc, i) => (
-                <motion.div
-                  key={svc.n} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: i * 0.1 }}
-                  className="group p-8 rounded-[2.5rem] bg-white border border-slate-50 shadow-lg hover:shadow-2xl hover:bg-slate-50 transition-all flex flex-col items-center gap-6"
-                >
-                  <div className="w-20 h-20 rounded-[1.75rem] bg-slate-900 flex items-center justify-center text-white group-hover:bg-secondary group-hover:scale-110 transition-all shadow-xl">
-                    <svc.i className="w-10 h-10" />
+            {scene === 'outcome' && (
+              <motion.div
+                key="outcome" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.1, opacity: 0 }}
+                className="w-full flex flex-col gap-16"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+                  <div className="space-y-6">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Traditional System</span>
+                    <div className="aspect-[16/10] rounded-[3rem] bg-slate-900 overflow-hidden relative group">
+                      <img src="https://picsum.photos/seed/legacy/1200/800?grayscale" className="w-full h-full object-cover opacity-30" referrerPolicy="no-referrer" />
+                      <div className="absolute inset-0 flex items-center justify-center text-error font-headline font-black text-4xl italic uppercase tracking-[0.2em] -rotate-12 border-4 border-error/30 m-12 rounded-[2rem]">Static Noise</div>
+                    </div>
+                    <p className="text-lg font-bold text-[#CBD5E1] italic">"Everyone runs. Nobody knows why."</p>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-lg font-black text-on-surface tracking-tight">{svc.n}</p>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{svc.l}</p>
+                  <div className="space-y-6">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary">NexusResponse</span>
+                    <div className="aspect-[16/10] rounded-[3rem] bg-secondary-container overflow-hidden relative shadow-2xl group">
+                      <img src="https://picsum.photos/seed/future/1200/800" className="w-full h-full object-cover opacity-40 mix-blend-overlay" referrerPolicy="no-referrer" />
+                      <div className="absolute inset-0 flex items-center justify-center text-white font-headline font-black text-4xl italic uppercase tracking-[0.2em] -rotate-6">Precision Ops</div>
+                    </div>
+                    <p className="text-lg font-bold text-white font-headline italic">"Every second is accounted for. Optimized for life."</p>
                   </div>
-                </motion.div>
-              ))}
-            </div>
+                </div>
 
-            <div className="flex gap-4">
-              <button onClick={onComplete} className="px-10 py-5 bg-on-surface text-surface rounded-[1.75rem] font-headline font-black text-sm uppercase tracking-widest shadow-2xl hover:bg-slate-800 transition-all flex items-center gap-3"><Zap className="w-5 h-5" /> Enter Live Demo</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 text-center pb-20">
+                  {[{ v: '50%', l: 'Reduction in Search Time' }, { v: '100Ms', l: 'Event Processing Latency' }, { v: 'ENTERPRISE', l: 'Built for Scale' }].map(s => (
+                    <div key={s.l} className="space-y-1">
+                      <p className="text-6xl font-headline font-black text-white italic tracking-tighter">{s.v}</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-secondary">{s.l}</p>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {scene === 'gcp' && (
+              <motion.div
+                key="gcp" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="w-full flex flex-col items-center gap-16 text-center"
+              >
+                <div className="space-y-6">
+                  <h2 className="text-4xl md:text-7xl font-headline font-black tracking-tight text-white font-normal">Built on <span className="text-secondary italic">Google Cloud.</span></h2>
+                  <p className="text-base md:text-xl text-[#CBD5E1] font-medium max-w-2xl mx-auto">Scales from 20 rooms to 2,000. Enterprise-grade security meets real-time AI logic at the edge.</p>
+                </div>
+
+                <div className="w-full grid grid-cols-2 md:grid-cols-4 gap-8">
+                  {[
+                    { n: 'Pub/Sub', i: Activity, l: 'Event Bus' },
+                    { n: 'Vertex AI', i: Cpu, l: 'Logic Engine' },
+                    { n: 'Firebase', i: Zap, l: 'Realtime Data' },
+                    { n: 'Maps JS', i: MapIcon, l: 'Spatial Viz' },
+                  ].map((svc, i) => (
+                    <motion.div
+                      key={svc.n} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: i * 0.1 }}
+                      className="group p-8 rounded-[2.5rem] bg-white border border-slate-50 shadow-lg hover:shadow-2xl hover:bg-slate-50 transition-all flex flex-col items-center gap-6"
+                    >
+                      <div className="w-20 h-20 rounded-[1.75rem] bg-slate-900 flex items-center justify-center text-white group-hover:bg-secondary group-hover:scale-110 transition-all shadow-xl">
+                        <svc.i className="w-10 h-10" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-lg font-black text-slate-950 tracking-tight">{svc.n}</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{svc.l}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 };
@@ -1469,7 +1588,7 @@ const AdminSettings = () => {
                 <span className="text-sm font-black uppercase tracking-widest text-slate-900">{feature.label}</span>
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{feature.desc}</span>
               </div>
-              <button 
+              <button
                 onClick={() => toggleSetting(feature.id as keyof typeof settings)}
                 className={cn("w-14 h-8 rounded-full transition-colors relative", settings[feature.id as keyof typeof settings] ? "bg-emerald-500" : "bg-slate-300")}
               >
@@ -1596,12 +1715,12 @@ export default function App() {
 
       <div className={cn(
         "flex flex-col min-h-screen transition-all duration-700 ease-in-out relative",
-        view === 'pitch' ? "ml-0" : "md:ml-72"
+        view === 'pitch' ? "ml-0" : "md:ml-[72px]"
       )}>
         <TopBar
-          title={view === 'pitch' ? "NexusResponse" : view === 'admin' ? `Sentinel • ${adminView.charAt(0).toUpperCase() + adminView.slice(1)}` : view === 'simulation' ? 'Live Demo' : "SafeStay Guest"}
           view={view}
           setView={(v) => { setView(v); setMobileMenuOpen(false); }}
+          activeCrisis={activeCrisis}
           onMenuOpen={() => setMobileMenuOpen(true)}
         />
 
@@ -1662,15 +1781,15 @@ export default function App() {
             {view === 'simulation' && (
               <motion.div key="sim" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98 }} className="flex-1 flex flex-col gap-4 w-full max-w-[1600px] mx-auto">
                 {/* Mobile tab switcher */}
-                <div className="flex lg:hidden items-center gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 self-start">
-                  <button onClick={() => setSimTab('admin')} className={cn("px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", simTab === 'admin' ? 'bg-slate-900 text-white' : 'text-slate-400')}>Admin View</button>
-                  <button onClick={() => setSimTab('guest')} className={cn("px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", simTab === 'guest' ? 'bg-slate-900 text-white' : 'text-slate-400')}>Guest App</button>
+                <div className="flex lg:hidden items-center gap-2 bg-[#111827] border border-white/10 rounded-2xl p-1.5 self-start">
+                  <button onClick={() => setSimTab('admin')} className={cn("px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", simTab === 'admin' ? 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30' : 'text-[#94A3B8]')}>Admin View</button>
+                  <button onClick={() => setSimTab('guest')} className={cn("px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", simTab === 'guest' ? 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30' : 'text-[#94A3B8]')}>Guest App</button>
                 </div>
                 <div className="flex-1 flex flex-col lg:flex-row gap-4 md:gap-8">
                   {/* Admin Side */}
-                  <div className={cn("flex-[3] bg-white border border-slate-200 rounded-[2rem] md:rounded-[3rem] p-5 md:p-10 overflow-y-auto custom-scrollbar relative shadow-xl min-h-[500px]", simTab === 'guest' ? 'hidden lg:block' : 'block')}>
+                  <div className={cn("flex-[3] bg-[#111827] border border-white/10 rounded-[2rem] md:rounded-[3rem] p-5 md:p-10 overflow-y-auto custom-scrollbar relative shadow-xl min-h-[500px]", simTab === 'guest' ? 'hidden lg:block' : 'block')}>
                     <div className="absolute top-6 right-6 md:top-8 md:right-10 flex items-center gap-2 z-10">
-                      <span className="px-3 py-1 bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest rounded-full">Admin View</span>
+                      <span className="px-3 py-1 bg-[#172033] border border-white/10 text-[#F8FAFC] text-[10px] uppercase font-black tracking-widest rounded-full">Admin View</span>
                     </div>
                     {adminView === 'dashboard' && <AdminDashboard rooms={rooms} isCompact={true} setSubView={setAdminView} />}
                     {adminView === 'incidents' && <AdminIncidents />}
@@ -1680,9 +1799,9 @@ export default function App() {
                     {adminView === 'settings' && <AdminSettings />}
                   </div>
                   {/* Guest Side (Mobile Mockup) */}
-                  <div className={cn("flex-[2] lg:max-w-[480px] flex items-center justify-center bg-slate-100 rounded-[2rem] md:rounded-[3rem] p-4 md:p-8 border border-slate-200 relative shadow-inner min-h-[600px]", simTab === 'admin' ? 'hidden lg:flex' : 'flex')}>
+                  <div className={cn("flex-[2] lg:max-w-[480px] flex items-center justify-center bg-[#172033] rounded-[2rem] md:rounded-[3rem] p-4 md:p-8 border border-white/10 relative shadow-inner min-h-[600px]", simTab === 'admin' ? 'hidden lg:flex' : 'flex')}>
                     <div className="absolute top-8 left-10 flex items-center gap-2 z-10">
-                      <span className="px-3 py-1 bg-white text-slate-900 border border-slate-200 text-[10px] uppercase font-black tracking-widest rounded-full shadow-sm">Guest App</span>
+                      <span className="px-3 py-1 bg-[#111827] text-[#F8FAFC] border border-white/10 text-[10px] uppercase font-black tracking-widest rounded-full shadow-sm">Guest App</span>
                     </div>
                     <div className="w-full max-w-[340px] aspect-[9/19.5] bg-surface rounded-[3.5rem] border-[12px] border-slate-950 shadow-2xl relative overflow-hidden flex flex-col ring-4 ring-slate-900/5">
                       {/* Device Polish */}
@@ -1762,14 +1881,14 @@ export default function App() {
 
         <footer className="py-6 px-4 md:py-8 md:px-12 border-t border-outline-variant/10 flex flex-col md:flex-row gap-4 md:gap-0 justify-between items-center bg-slate-50/50 backdrop-blur-md">
           <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-[#475569] tracking-[0.2em]">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" /> SYSTEM SECURED • ACTIVE
             </div>
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500 tracking-[0.2em] border-l border-outline-variant/30 pl-4">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-[#475569] tracking-[0.2em] border-l border-outline-variant/30 pl-4">
               <div className="w-1.5 h-1.5 rounded-full bg-slate-300" /> AI CORE: ANALYZING
             </div>
           </div>
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">© 2026 NexusResponse Hub • Google Cloud Partner <br /><span className="text-[8px] opacity-60">Authorized Personnel Only</span></p>
+          <p className="text-[10px] font-bold text-[#475569] uppercase tracking-widest leading-none">© 2026 NexusResponse Hub • Google Cloud Partner <br /><span className="text-[8px] opacity-60">Authorized Personnel Only</span></p>
         </footer>
       </div>
 

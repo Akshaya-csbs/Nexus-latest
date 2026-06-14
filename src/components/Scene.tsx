@@ -53,7 +53,7 @@ function ExitBlock({ position }: { position: [number, number, number] }) {
 function EvacuationRoute({ startPos }: { startPos: [number, number, number] }) {
   const [x, y, z] = startPos;
   const exitX = x < 0 ? -16 : 16;
-  
+
   let doorZ = z;
   let corridorZ = z;
 
@@ -101,7 +101,7 @@ interface SceneProps {
 export default function Scene({ guestLocation, selectedRoomId, onRoomSelect, activeCrisis }: SceneProps) {
   const markerRoomId = guestLocation || '401';
   const markerPos = ROOM_COORDS[markerRoomId] || [-10, 0, -12];
-  
+
   const routeOriginId = selectedRoomId || guestLocation;
   const routeStartPos = routeOriginId ? ROOM_COORDS[routeOriginId] : null;
 
@@ -110,40 +110,40 @@ export default function Scene({ guestLocation, selectedRoomId, onRoomSelect, act
       {/* Base Floor */}
       <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[60, 60]} />
-        <meshStandardMaterial color="#8bb7ab" />
+        <meshStandardMaterial color="#0B1020" />
       </mesh>
 
       {/* Main Corridor Highlight */}
       <mesh position={[0, 0.02, -2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[36, 6]} />
-        <meshBasicMaterial color="#d1e5e0" />
+        <meshBasicMaterial color="#111827" />
       </mesh>
-      
+
       {/* Top Sub-Corridor */}
       <mesh position={[0, 0.02, -11]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[36, 2]} />
-        <meshBasicMaterial color="#d1e5e0" />
+        <meshBasicMaterial color="#111827" />
       </mesh>
 
       {/* Bottom Sub-Corridor */}
       <mesh position={[0, 0.02, 7]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[36, 2]} />
-        <meshBasicMaterial color="#d1e5e0" />
+        <meshBasicMaterial color="#111827" />
       </mesh>
 
       {/* Vertical Corridor Highlight */}
       <mesh position={[0, 0.02, -2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[6, 28]} />
-        <meshBasicMaterial color="#d1e5e0" />
+        <meshBasicMaterial color="#111827" />
       </mesh>
 
       <Text
         position={[0, 0.03, -2]}
         rotation={[-Math.PI / 2, 0, 0]}
         fontSize={2}
-        color="#598276"
+        color="#94A3B8"
         anchorX="center"
-        anchorY="center"
+        anchorY="middle"
         fontWeight="bold"
         letterSpacing={0.2}
       >
@@ -155,17 +155,17 @@ export default function Scene({ guestLocation, selectedRoomId, onRoomSelect, act
         const isBottomRoom = pos[2] > 0;
         const isCrisisRoom = activeCrisis?.roomNumber === id;
         return (
-          <Room 
-            key={id} 
-            position={pos} 
-            roomNumber={id} 
+          <Room
+            key={id}
+            position={pos}
+            roomNumber={id}
             doorFacing={isBottomRoom ? 'north' : 'south'}
             onClick={() => onRoomSelect?.(id)}
             isCrisis={isCrisisRoom}
           />
         );
       })}
-      
+
       <Elevator position={[0, 0, -16]} />
 
       <ExitBlock position={[-16, 0, -2]} />

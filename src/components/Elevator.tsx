@@ -8,7 +8,7 @@ interface ElevatorProps {
 
 export default function Elevator({ position, rotation = [0, 0, 0] }: ElevatorProps) {
   const wallColor = '#a8e0cb';
-  
+
   return (
     <group position={position} rotation={rotation}>
       {/* Elevator Frame/Shaft */}
@@ -16,7 +16,7 @@ export default function Elevator({ position, rotation = [0, 0, 0] }: ElevatorPro
         <boxGeometry args={[4, 3, 1]} />
         <meshStandardMaterial color={wallColor} />
       </mesh>
-      
+
       {/* Elevator Doors */}
       <mesh position={[-0.85, 1.25, 0.05]} castShadow receiveShadow>
         <boxGeometry args={[1.6, 2.5, 0.1]} />
@@ -45,7 +45,7 @@ export default function Elevator({ position, rotation = [0, 0, 0] }: ElevatorPro
         fontSize={0.25}
         color="#374151"
         anchorX="center"
-        anchorY="center"
+        anchorY="middle"
         fontWeight="bold"
       >
         ELEVATOR

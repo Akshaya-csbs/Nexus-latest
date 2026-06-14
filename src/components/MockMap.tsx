@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
-import { motion } from 'motion/react';
+import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { RoomStatus, CrisisEvent } from '../services/firebaseService';
 import { cn } from '../lib/utils';
-import { MapPin, Shield, AlertCircle } from 'lucide-react';
+import { MapPin, Shield, AlertCircle, Users, Navigation } from 'lucide-react';
 
 interface MockMapProps {
   rooms: RoomStatus[];
@@ -12,8 +12,11 @@ interface MockMapProps {
   highlightRoom?: string;
 }
 
-const MockMap: React.FC<MockMapProps> = ({ rooms, crises, className, onRoomClick, highlightRoom }) => {
-  // Generate a mock grid-based floor plan
+export const MockMap: React.FC<MockMapProps> = ({ rooms, crises, className, onRoomClick, highlightRoom }) => {
+  const [selectedFloor, setSelectedFloor] = useState<number>(4);
+  const [hoveredRoomId, setHoveredRoomId] = useState<string | null>(null);
+
+  // Generate a mock grid-based floor plan for the selected floor
   const grid = useMemo(() => {
     const layout = [];
     const cols = 8;
@@ -24,119 +27,252 @@ const MockMap: React.FC<MockMapProps> = ({ rooms, crises, className, onRoomClick
         // Leave some gaps for hallways
         if (c === 3 || r === 2) continue;
 
-        const floor = 4;
         const roomIdx = (r * cols + c).toString().padStart(2, '0');
-        const roomNumber = `${floor}${roomIdx}`;
+        const roomNumber = `${selectedFloor}${roomIdx}`;
 
         layout.push({
           x: c * 100,
           y: r * 100,
-          w: 90,
-          h: 90,
-          id: roomNumber
+          w: 88,
+          h: 88,
+          id: roomNumber,
+          wing: c < 3 ? (r < 2 ? 'ALPHA' : 'CHARLIE') : (r < 2 ? 'BRAVO' : 'DELTA')
         });
       }
     }
     return layout;
-  }, []);
+  }, [selectedFloor]);
+
+  // Hovered room details
+  const hoveredRoomDetails = useMemo(() => {
+    if (!hoveredRoomId) return null;
+    const roomData = rooms.find(r => r.roomNumber === hoveredRoomId);
+    const crisis = crises.find(c => c.roomNumber === hoveredRoomId && c.status === 'active');
+    return {
+      id: hoveredRoomId,
+      status: crisis ? 'Active Incident' : roomData?.occupancyStatus || 'unknown',
+      occupants: roomData?.occupancyStatus === 'occupied' ? 4 : 0,
+      severity: crisis?.severity || 'none',
+      type: crisis?.crisisType || 'none'
+    };
+  }, [hoveredRoomId, rooms, crises]);
 
   return (
-    <div className={cn("relative bg-slate-50 rounded-3xl overflow-hidden border border-slate-200", className)}>
-      <svg
-        viewBox="-20 -20 820 520"
-        className="w-full h-full drop-shadow-2xl"
-        preserveAspectRatio="xMidYMid meet"
-      >
-        {/* Hallways / Background text */}
-        <text x="315" y="250" className="fill-slate-200 font-headline font-black text-2xl uppercase tracking-[0.5em] rotate-90" textAnchor="middle">Main Hallway</text>
-        <text x="400" y="215" className="fill-slate-200 font-headline font-black text-2xl uppercase tracking-[0.5em]" textAnchor="middle">Wing Connector</text>
+    <div className={cn("relative bg-[#0B1020] rounded-3xl overflow-hidden border border-white/10 flex flex-col h-full", className)}>
+      {/* Map Control Bar (Floor Selector) */}
+      <div className="absolute top-4 left-4 z-15 flex items-center gap-2 bg-[#111827] border border-white/10 p-1.5 rounded-xl shadow-lg">
+        {[1, 2, 3, 4, 5].map((fl) => (
+          <button
+            key={fl}
+            onClick={() => setSelectedFloor(fl)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-bold transition-all uppercase tracking-wider",
+              selectedFloor === fl
+                ? "bg-[#3B82F6] text-white"
+                : "text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-white/5"
+            )}
+          >
+            L{fl}
+          </button>
+        ))}
+        <span className="text-[10px] font-bold text-[#94A3B8] px-2 uppercase tracking-widest border-l border-white/10 ml-1">Floor Plan</span>
+      </div>
 
-        {/* Room Grid */}
-        {grid.map((room) => {
-          const roomData = rooms.find(r => r.roomNumber === room.id);
-          const crisis = crises.find(c => c.roomNumber === room.id && c.status === 'active');
-          const isHighlighted = highlightRoom === room.id;
+      <div className="flex-1 relative overflow-hidden flex items-center justify-center p-6">
+        <svg
+          viewBox="-20 -20 840 540"
+          className="w-full h-full drop-shadow-2xl max-h-[380px]"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {/* Main Grid Hallways */}
+          {/* Vertical Hallway */}
+          <rect x="300" y="0" width="100" height="500" className="fill-[#172033] stroke-white/5 stroke-1" />
+          {/* Horizontal Hallway */}
+          <rect x="0" y="200" width="800" height="100" className="fill-[#172033] stroke-white/5 stroke-1" />
 
-          let statusColor = "fill-white stroke-slate-200";
-          let textColor = "fill-slate-400";
-          let animate = false;
+          {/* Hallways / Infrastructure Labels */}
+          <text x="350" y="255" className="fill-[#94A3B8]/20 font-sans font-bold text-lg uppercase tracking-[0.4em]" textAnchor="middle" dominantBaseline="middle">Main Junction</text>
+          <text x="150" y="250" className="fill-[#94A3B8]/25 font-sans font-black text-xs uppercase tracking-[0.3em]" textAnchor="middle">West corridor</text>
+          <text x="550" y="250" className="fill-[#94A3B8]/25 font-sans font-black text-xs uppercase tracking-[0.3em]" textAnchor="middle">East corridor</text>
 
-          const hasActiveCrisis = crises.some(c => c.status === 'active');
+          {/* Infrastructure elements */}
+          {/* Elevator */}
+          <g transform="translate(305, 10)">
+            <rect width="90" height="80" rx="8" className="fill-[#111827] stroke-[#3B82F6]/30 stroke-1" />
+            <text x="45" y="35" className="fill-[#3B82F6] font-sans font-bold text-[10px] uppercase tracking-wider" textAnchor="middle">ELEVATOR</text>
+            <text x="45" y="55" className="fill-[#22C55E] font-mono text-[9px] uppercase tracking-widest" textAnchor="middle">NOMINAL</text>
+          </g>
 
-          if (crisis) {
-            statusColor = "fill-error/20 stroke-error";
-            textColor = "fill-error";
-            animate = true;
-          } else if (roomData?.occupancyStatus === 'occupied' || room.id === '412') {
-            statusColor = "fill-[#0b1c30] stroke-[#0b1c30]/50";
-            textColor = "fill-white";
-          } else if (hasActiveCrisis && roomData?.occupancyStatus === 'evacuated') {
-            statusColor = "fill-emerald-50/50 stroke-emerald-500";
-            textColor = "fill-emerald-600";
-          }
+          {/* Stairwell */}
+          <g transform="translate(305, 410)">
+            <rect width="90" height="80" rx="8" className="fill-[#111827] stroke-[#94A3B8]/30 stroke-1" />
+            <text x="45" y="35" className="fill-[#94A3B8] font-sans font-bold text-[10px] uppercase tracking-wider" textAnchor="middle">STAIRWELL</text>
+            <text x="45" y="55" className="fill-[#22C55E] font-sans text-[8px] uppercase tracking-widest" textAnchor="middle">EXIT ROUTE</text>
+          </g>
 
-          if (isHighlighted) {
-            statusColor = "fill-secondary/20 stroke-secondary stroke-[3px]";
-          }
+          {/* Emergency Exits */}
+          <g transform="translate(350, 495)" className="fill-[#22C55E]">
+            <path d="M-5,0 L5,0 L0,10 Z" />
+            <text x="0" y="-10" className="fill-[#22C55E] font-sans font-black text-[9px] uppercase tracking-wider" textAnchor="middle">SOUTH EXIT</text>
+          </g>
+          <g transform="translate(350, -5)" className="fill-[#22C55E]">
+            <path d="M-5,0 L5,0 L0,-10 Z" />
+            <text x="0" y="15" className="fill-[#22C55E] font-sans font-black text-[9px] uppercase tracking-wider" textAnchor="middle">NORTH EXIT</text>
+          </g>
 
-          return (
-            <motion.g
-              key={room.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileHover={{ scale: 1.02 }}
-              className="cursor-pointer"
-              onClick={() => onRoomClick?.(room.id)}
-            >
-              <rect
-                x={room.x} y={room.y} width={room.w} height={room.h} rx="12"
-                className={cn("transition-colors duration-500", statusColor)}
-              />
+          {/* Wing Labels */}
+          <text x="20" y="30" className="fill-[#94A3B8]/30 font-sans font-black text-[10px] uppercase tracking-widest text-left">SEC ALPHA</text>
+          <text x="780" y="30" className="fill-[#94A3B8]/30 font-sans font-black text-[10px] uppercase tracking-widest text-right" textAnchor="end">SEC BRAVO</text>
+          <text x="20" y="480" className="fill-[#94A3B8]/30 font-sans font-black text-[10px] uppercase tracking-widest text-left">SEC CHARLIE</text>
+          <text x="780" y="480" className="fill-[#94A3B8]/30 font-sans font-black text-[10px] uppercase tracking-widest text-right" textAnchor="end">SEC DELTA</text>
 
-              {animate && (
-                <motion.rect
-                  x={room.x - 5} y={room.y - 5} width={room.w + 10} height={room.h + 10} rx="16"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: [0, 0.5, 0], scale: [1, 1.1, 1] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="fill-error/10 stroke-error/30 stroke-1 pointer-events-none"
-                />
-              )}
+          {/* Room Grid */}
+          {grid.map((room) => {
+            const roomData = rooms.find(r => r.roomNumber === room.id);
+            const crisis = crises.find(c => c.roomNumber === room.id && c.status === 'active');
+            const isHighlighted = highlightRoom === room.id;
 
-              <text
-                x={room.x + room.w / 2}
-                y={room.y + room.h / 2}
-                textAnchor="middle"
-                dominantBaseline="central"
-                className={cn("font-headline font-black text-lg italic", textColor)}
+            // SOC color mapping
+            // Green = Safe (#22C55E)
+            // Amber = Warning (#F59E0B)
+            // Red = Active Incident (#EF4444)
+            // Blue = Responder Present (#3B82F6)
+            // Gray = Unknown (#4b5563)
+            let fillColor = "#4b5563"; // Default Gray Unknown
+            let strokeColor = "rgba(255, 255, 255, 0.15)";
+            let textColor = "#CBD5E1";
+            let strokeWidth = 1.5;
+
+            if (crisis) {
+              fillColor = "#EF4444"; // Red Danger
+              strokeColor = "#EF4444";
+              textColor = "#F8FAFC";
+            } else if (roomData?.occupancyStatus === 'occupied') {
+              fillColor = "#111827"; // Dark blue-gray for normal occupancy
+              strokeColor = "#22C55E"; // Safe Green boundary
+              textColor = "#22C55E";
+            } else if (roomData?.occupancyStatus === 'evacuated') {
+              fillColor = "#172033";
+              strokeColor = "#3B82F6"; // Responder Present / Evacuated Info Blue
+              textColor = "#3B82F6";
+            } else if (room.id === '412') {
+              // Special demo room defaults
+              fillColor = "#111827";
+              strokeColor = "#22C55E";
+              textColor = "#22C55E";
+            }
+
+            if (isHighlighted) {
+              strokeColor = "#F59E0B"; // Highlight Amber
+              strokeWidth = 3;
+            }
+
+            return (
+              <motion.g
+                key={room.id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.02 }}
+                className="cursor-pointer"
+                onClick={() => onRoomClick?.(room.id)}
+                onPointerOver={() => setHoveredRoomId(room.id)}
+                onPointerOut={() => setHoveredRoomId(null)}
               >
-                {room.id}
-              </text>
+                <rect
+                  x={room.x} y={room.y} width={room.w} height={room.h} rx="8"
+                  fill={fillColor}
+                  stroke={strokeColor}
+                  strokeWidth={strokeWidth}
+                  className="transition-all duration-300 fill-opacity-80"
+                />
 
-              {crisis && (
-                <circle cx={room.x + room.w - 15} cy={room.y + 15} r="8" className="fill-error stroke-white stroke-2" />
+                {/* Pulse ring for active incidents */}
+                {crisis && (
+                  <motion.rect
+                    x={room.x - 4} y={room.y - 4} width={room.w + 8} height={room.h + 8} rx="12"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 0.4, 0], scale: [1, 1.05, 1] }}
+                    transition={{ repeat: Infinity, duration: 1.5 }}
+                    fill="none"
+                    stroke="#EF4444"
+                    strokeWidth="2"
+                  />
+                )}
+
+                {/* Room Label */}
+                <text
+                  x={room.x + room.w / 2}
+                  y={room.y + room.h / 2 - 10}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fill={textColor}
+                  className="font-sans font-black text-sm tracking-wider"
+                >
+                  {room.id}
+                </text>
+
+                {/* Occupancy Indicator */}
+                {roomData?.occupancyStatus === 'occupied' && (
+                  <g transform={`translate(${room.x + room.w/2 - 14}, ${room.y + room.h/2 + 10})`} className="opacity-80">
+                    <circle cx="8" cy="8" r="4" fill="#22C55E" />
+                    <text x="20" y="11" fill="#CBD5E1" className="font-mono text-[9px] font-bold">O:4</text>
+                  </g>
+                )}
+
+                {/* Responder marker representation (mocked) */}
+                {room.id === '415' && (
+                  <g transform={`translate(${room.x + 10}, ${room.y + 10})`}>
+                    <circle cx="6" cy="6" r="5" fill="#3B82F6" className="animate-pulse" />
+                    <circle cx="6" cy="6" r="2" fill="#F8FAFC" />
+                  </g>
+                )}
+              </motion.g>
+            );
+          })}
+        </svg>
+
+        {/* Floating Tooltip info */}
+        <AnimatePresence>
+          {hoveredRoomDetails && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute bottom-4 right-4 bg-[#111827] border border-white/10 p-4 rounded-xl shadow-2xl z-20 w-48 text-left space-y-2 pointer-events-none"
+            >
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-black text-[#F8FAFC] tracking-wider">ROOM {hoveredRoomDetails.id}</span>
+                <span className={cn(
+                  "w-2 h-2 rounded-full",
+                  hoveredRoomDetails.status === 'Active Incident' ? 'bg-[#EF4444]' :
+                  hoveredRoomDetails.status === 'occupied' ? 'bg-[#22C55E]' :
+                  'bg-[#94A3B8]'
+                )} />
+              </div>
+              <div className="h-px bg-white/5" />
+              <div className="space-y-1">
+                <p className="text-[9px] font-bold text-[#94A3B8] uppercase">STATUS</p>
+                <p className="text-[11px] font-bold text-[#CBD5E1] uppercase tracking-wide">{hoveredRoomDetails.status}</p>
+              </div>
+              {hoveredRoomDetails.occupants > 0 && (
+                <div className="space-y-1">
+                  <p className="text-[9px] font-bold text-[#94A3B8] uppercase">EST. OCCUPANTS</p>
+                  <p className="text-[11px] font-bold text-[#CBD5E1] tracking-wide">{hoveredRoomDetails.occupants} PERSONS</p>
+                </div>
               )}
-            </motion.g>
-          );
-        })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-        {/* Legend Overlay in SVG space or just float it? Let's fix a floating UI instead */}
-      </svg>
-
-      {/* Floating Legend */}
-      <div className="absolute bottom-6 left-6 p-4 bg-white/90 backdrop-blur-md border border-slate-200 rounded-2xl shadow-xl space-y-2 pointer-events-none">
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-error" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Active Alert</span>
+      {/* Footer Info Strip */}
+      <div className="bg-[#111827] border-t border-white/10 px-4 py-3 flex justify-between items-center text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#22C55E]" /> SAFE</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#EF4444]" /> DANGER</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#3B82F6]" /> RESPONDER</span>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-slate-900" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Occupied</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-emerald-500" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Evacuated</span>
-        </div>
+        <span>Level {selectedFloor} Grid Active</span>
       </div>
     </div>
   );

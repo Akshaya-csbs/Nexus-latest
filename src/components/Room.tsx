@@ -32,16 +32,16 @@ export default function Room({
 }: RoomProps) {
   const [hovered, setHovered] = useState(false);
   const wallThickness = 0.6;
-  
+
   // Determine colors based on crisis and hover state
   const baseWallColor = hovered ? '#e0f8e9' : '#cbf5dc'; // Bright whitish green
   const crisisWallColor = hovered ? '#f87171' : '#ef4444'; // Red for crisis
   const wallColor = isCrisis ? crisisWallColor : baseWallColor;
-  
+
   const baseFloorColor = '#aee8c4';
   const crisisFloorColor = '#fca5a5';
   const floorColor = isCrisis ? crisisFloorColor : baseFloorColor;
-  
+
   // Create an array of materials to color the top face white
   const materials = useMemo(() => {
     const sideMat = new THREE.MeshStandardMaterial({ color: wallColor });
@@ -58,15 +58,14 @@ export default function Room({
 
   // Door gap
   const doorWidth = 1.2;
-  
+
   return (
-    <group 
-      position={position} 
-      rotation={rotation} 
+    <group
+      position={position}
+      rotation={rotation}
       onClick={(e) => { e.stopPropagation(); onClick?.(); }}
-      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
-      onPointerOut={(e) => { e.stopPropagation(); setHovered(false); }}
-      cursor={onClick ? "pointer" : "auto"}
+      onPointerOver={(e) => { e.stopPropagation(); setHovered(true); if (onClick) document.body.style.cursor = 'pointer'; }}
+      onPointerOut={(e) => { e.stopPropagation(); setHovered(false); if (onClick) document.body.style.cursor = 'auto'; }}
     >
       {/* Floor area inside room (optional, if we want a different color inside) */}
       <mesh position={[0, 0.01, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -90,7 +89,7 @@ export default function Room({
       </mesh>
 
       {/* Wall with Door */}
-      <group 
+      <group
         position={[0, wallHeight / 2, doorFacing === 'north' ? -depth / 2 : depth / 2]}
         rotation={[0, doorFacing === 'north' ? Math.PI : 0, 0]}
       >
@@ -98,12 +97,12 @@ export default function Room({
         <mesh position={[- (width / 2 - doorWidth / 2 + wallThickness) / 2 - doorWidth / 2, 0, 0]} castShadow receiveShadow material={materials}>
           <boxGeometry args={[(width - doorWidth) / 2 + wallThickness, wallHeight, wallThickness]} />
         </mesh>
-        
+
         {/* Right piece of front wall */}
         <mesh position={[(width / 2 - doorWidth / 2 + wallThickness) / 2 + doorWidth / 2, 0, 0]} castShadow receiveShadow material={materials}>
           <boxGeometry args={[(width - doorWidth) / 2 + wallThickness, wallHeight, wallThickness]} />
         </mesh>
-        
+
         {/* Door */}
         <mesh position={[0, -0.2, 0]} castShadow receiveShadow>
           <boxGeometry args={[doorWidth - 0.1, wallHeight - 0.4, 0.05]} />
@@ -127,7 +126,7 @@ export default function Room({
           fontSize={0.4}
           color="#4ade80"
           anchorX="center"
-          anchorY="center"
+          anchorY="middle"
         >
           ^
         </Text>
@@ -140,7 +139,7 @@ export default function Room({
         fontSize={1.2}
         color="#000000"
         anchorX="center"
-        anchorY="center"
+        anchorY="middle"
         fontWeight="bold"
       >
         {roomNumber}

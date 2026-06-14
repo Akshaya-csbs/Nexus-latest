@@ -10,7 +10,7 @@ interface MarkerProps {
 
 export default function Marker({ position, text = "YOU ARE HERE" }: MarkerProps) {
   const markerRef = useRef<THREE.Group>(null);
-  
+
   // Bobbing animation
   useFrame((state) => {
     if (markerRef.current) {
@@ -25,7 +25,7 @@ export default function Marker({ position, text = "YOU ARE HERE" }: MarkerProps)
         <sphereGeometry args={[0.5, 32, 32]} />
         <meshBasicMaterial color="#166534" transparent opacity={0.4} />
       </mesh>
-      
+
       {/* Inner Pin */}
       <mesh position={[0, 0, 0]}>
         <coneGeometry args={[0.3, 0.8, 16]} />
@@ -46,7 +46,7 @@ export default function Marker({ position, text = "YOU ARE HERE" }: MarkerProps)
         fontSize={0.4}
         color="#14532d"
         anchorX="center"
-        anchorY="center"
+        anchorY="middle"
         fontWeight="bold"
       >
         {text}
