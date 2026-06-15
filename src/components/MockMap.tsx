@@ -77,10 +77,9 @@ export const MockMap: React.FC<MockMapProps> = ({ rooms, crises, className, onRo
         ))}
         <span className="text-[10px] font-bold text-[#94A3B8] px-2 uppercase tracking-widest border-l border-white/10 ml-1">Floor Plan</span>
       </div>
-
       <div className="flex-1 relative overflow-hidden flex items-center justify-center p-6">
         <svg
-          viewBox="-20 -20 840 540"
+          viewBox="-250 -20 1200 540"
           className="w-full h-full drop-shadow-2xl max-h-[380px]"
           preserveAspectRatio="xMidYMid meet"
         >
@@ -88,12 +87,12 @@ export const MockMap: React.FC<MockMapProps> = ({ rooms, crises, className, onRo
           {/* Vertical Hallway */}
           <rect x="300" y="0" width="100" height="500" className="fill-[#172033] stroke-white/5 stroke-1" />
           {/* Horizontal Hallway */}
-          <rect x="0" y="200" width="800" height="100" className="fill-[#172033] stroke-white/5 stroke-1" />
+          <rect x="-120" y="200" width="1028" height="100" className="fill-[#172033] stroke-white/5 stroke-1" />
 
           {/* Hallways / Infrastructure Labels */}
           <text x="350" y="255" className="fill-[#94A3B8]/20 font-sans font-bold text-lg uppercase tracking-[0.4em]" textAnchor="middle" dominantBaseline="middle">Main Junction</text>
-          <text x="150" y="250" className="fill-[#94A3B8]/25 font-sans font-black text-xs uppercase tracking-[0.3em]" textAnchor="middle">West corridor</text>
-          <text x="550" y="250" className="fill-[#94A3B8]/25 font-sans font-black text-xs uppercase tracking-[0.3em]" textAnchor="middle">East corridor</text>
+          <text x="90" y="250" className="fill-[#94A3B8]/25 font-sans font-black text-xs uppercase tracking-[0.3em]" textAnchor="middle">West corridor</text>
+          <text x="610" y="250" className="fill-[#94A3B8]/25 font-sans font-black text-xs uppercase tracking-[0.3em]" textAnchor="middle">East corridor</text>
 
           {/* Infrastructure elements */}
           {/* Elevator */}
@@ -103,23 +102,35 @@ export const MockMap: React.FC<MockMapProps> = ({ rooms, crises, className, onRo
             <text x="45" y="55" className="fill-[#22C55E] font-mono text-[9px] uppercase tracking-widest" textAnchor="middle">NOMINAL</text>
           </g>
 
-          {/* Stairwell */}
-          <g transform="translate(305, 410)">
+          {/* Stairwell 1 (Left) */}
+          <g transform="translate(-105, 210)">
             <rect width="90" height="80" rx="8" className="fill-[#111827] stroke-[#94A3B8]/30 stroke-1" />
-            <text x="45" y="35" className="fill-[#94A3B8] font-sans font-bold text-[10px] uppercase tracking-wider" textAnchor="middle">STAIRWELL</text>
-            <text x="45" y="55" className="fill-[#22C55E] font-sans text-[8px] uppercase tracking-widest" textAnchor="middle">EXIT ROUTE</text>
+            <text x="45" y="30" className="fill-[#94A3B8] font-sans font-bold text-[11px] uppercase tracking-wider" textAnchor="middle">STAIRWELL 1</text>
+            <text x="45" y="48" className="fill-[#22C55E] font-sans font-semibold text-[9px] uppercase tracking-widest" textAnchor="middle">EXIT ROUTE</text>
+            <text x="45" y="62" className="fill-[#22C55E] font-sans font-semibold text-[9px] uppercase tracking-widest" textAnchor="middle">SIDE EXIT</text>
+          </g>
+          {/* Stairwell 1 Directional Arrow */}
+          <g transform="translate(-60, 305)" className="fill-[#22C55E]">
+            <path d="M5,-3 L5,3 L-5,0 Z" />
+          </g>
+
+          {/* Stairwell 2 (Right) */}
+          <g transform="translate(803, 210)">
+            <rect width="90" height="80" rx="8" className="fill-[#111827] stroke-[#94A3B8]/30 stroke-1" />
+            <text x="45" y="30" className="fill-[#94A3B8] font-sans font-bold text-[11px] uppercase tracking-wider" textAnchor="middle">STAIRWELL 2</text>
+            <text x="45" y="48" className="fill-[#22C55E] font-sans font-semibold text-[9px] uppercase tracking-widest" textAnchor="middle">EXIT ROUTE</text>
+            <text x="45" y="62" className="fill-[#22C55E] font-sans font-semibold text-[9px] uppercase tracking-widest" textAnchor="middle">SIDE EXIT</text>
+          </g>
+          {/* Stairwell 2 Directional Arrow */}
+          <g transform="translate(848, 305)" className="fill-[#22C55E]">
+            <path d="M-5,-3 L-5,3 L5,0 Z" />
           </g>
 
           {/* Emergency Exits */}
-          <g transform="translate(350, 495)" className="fill-[#22C55E]">
-            <path d="M-5,0 L5,0 L0,10 Z" />
-            <text x="0" y="-10" className="fill-[#22C55E] font-sans font-black text-[9px] uppercase tracking-wider" textAnchor="middle">SOUTH EXIT</text>
-          </g>
           <g transform="translate(350, -5)" className="fill-[#22C55E]">
             <path d="M-5,0 L5,0 L0,-10 Z" />
             <text x="0" y="15" className="fill-[#22C55E] font-sans font-black text-[9px] uppercase tracking-wider" textAnchor="middle">NORTH EXIT</text>
           </g>
-
           {/* Wing Labels */}
           <text x="20" y="30" className="fill-[#94A3B8]/30 font-sans font-black text-[10px] uppercase tracking-widest text-left">SEC ALPHA</text>
           <text x="780" y="30" className="fill-[#94A3B8]/30 font-sans font-black text-[10px] uppercase tracking-widest text-right" textAnchor="end">SEC BRAVO</text>
@@ -213,7 +224,7 @@ export const MockMap: React.FC<MockMapProps> = ({ rooms, crises, className, onRo
 
                 {/* Occupancy Indicator */}
                 {roomData?.occupancyStatus === 'occupied' && (
-                  <g transform={`translate(${room.x + room.w/2 - 14}, ${room.y + room.h/2 + 10})`} className="opacity-80">
+                  <g transform={`translate(${room.x + room.w / 2 - 14}, ${room.y + room.h / 2 + 10})`} className="opacity-80">
                     <circle cx="8" cy="8" r="4" fill="#22C55E" />
                     <text x="20" y="11" fill="#CBD5E1" className="font-mono text-[9px] font-bold">O:4</text>
                   </g>
@@ -245,8 +256,8 @@ export const MockMap: React.FC<MockMapProps> = ({ rooms, crises, className, onRo
                 <span className={cn(
                   "w-2 h-2 rounded-full",
                   hoveredRoomDetails.status === 'Active Incident' ? 'bg-[#EF4444]' :
-                  hoveredRoomDetails.status === 'occupied' ? 'bg-[#22C55E]' :
-                  'bg-[#94A3B8]'
+                    hoveredRoomDetails.status === 'occupied' ? 'bg-[#22C55E]' :
+                      'bg-[#94A3B8]'
                 )} />
               </div>
               <div className="h-px bg-white/5" />
